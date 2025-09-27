@@ -1,10 +1,10 @@
 # Neo4j Database Schema Documentation
 
-This document describes the structure of the Neo4j graph database that stores Philippine Congress data.
+This document describes the structure of the Neo4j graph database that stores Philippine Congress data. The database is populated by the `scripts/sync_to_neo4j.py` script from TOML files in the `data/` directory.
 
 ## Overview
 
-The database uses a graph model to represent the relationships between Congress sessions, committees, and people (senators and representatives). This structure allows for efficient querying of complex relationships like committee memberships across different congresses and tracking of political careers over time.
+The database uses a graph model to represent the relationships between Congress sessions, chambers (Senate/House), committees, and people (senators and representatives). This structure allows for efficient querying of complex relationships like chamber memberships across different congresses and tracking of political careers over time.
 
 ## Node Types
 
@@ -32,9 +32,34 @@ MATCH (c:Congress {congress_number: 20})
 RETURN c
 ```
 
-### 2. Committee Node
+### 2. Group Node (Chambers)
 
-Represents a Senate committee within a Congress.
+Represents chambers (Senate or House of Representatives) within a specific Congress.
+
+**Label:** `Group`
+
+**Properties:**
+- `id` (string, required) - Unique identifier (ULID format)
+- `name` (string, required) - Chamber name (e.g., "Senate - 8th Congress")
+- `type` (string, required) - Always "chamber" for chamber groups
+- `subtype` (string, required) - Either "senate" or "house"
+- `congress` (integer, required) - Congress number this chamber belongs to
+
+**Example Cypher Query:**
+```cypher
+// Find all Senate chambers
+MATCH (g:Group {type: "chamber", subtype: "senate"})
+RETURN g.name, g.congress
+ORDER BY g.congress
+
+// Find House chamber for 19th Congress
+MATCH (g:Group {type: "chamber", subtype: "house", congress: 19})
+RETURN g
+```
+
+### 3. Committee Node
+
+Represents a Senate or House committee within a Congress.
 
 **Label:** `Committee`
 
@@ -51,7 +76,7 @@ WHERE com.name CONTAINS "Finance"
 RETURN com
 ```
 
-### 3. Person Node
+### 4. Person Node
 
 Represents senators, representatives, and other congressional officials.
 
@@ -79,36 +104,71 @@ RETURN p
 
 ## Relationships
 
-### 1. BELONGS_TO
+### 1. MEMBER_OF
 
-Connects committees to the congresses they operated in.
+Connects people to the chambers they served in.
 
-**Direction:** `(Committee)-[:BELONGS_TO]->(Congress)`
+**Direction:** `(Person)-[:MEMBER_OF]->(Group)`
+
+**Properties:**
+- `position` (string) - Additional position details if any
+
+**Example Cypher Query:**
+```cypher
+// Find all senators in 20th Congress
+MATCH (p:Person)-[:MEMBER_OF]->(g:Group {type: "chamber", subtype: "senate", congress: 20})
+RETURN p.last_name, p.first_name
+ORDER BY p.last_name
+
+// Find all House members in 19th Congress
+MATCH (p:Person)-[:MEMBER_OF]->(g:Group {type: "chamber", subtype: "house", congress: 19})
+RETURN p.last_name, p.first_name
+ORDER BY p.last_name
+```
+
+### 2. BELONGS_TO
+
+Connects chambers and committees to the congresses they operated in.
+
+**Direction:**
+- `(Group)-[:BELONGS_TO]->(Congress)` for chambers
+- `(Committee)-[:BELONGS_TO]->(Congress)` for committees
 
 **Properties:** None
 
 **Example Cypher Query:**
 ```cypher
+// Find Senate chamber for 20th Congress
+MATCH (g:Group {type: "chamber", subtype: "senate"})-[:BELONGS_TO]->(c:Congress {congress_number: 20})
+RETURN g, c
+
+// Find all committees in 20th Congress
 MATCH (com:Committee)-[:BELONGS_TO]->(con:Congress {congress_number: 20})
 RETURN com.name, con.name
 ```
 
-### 2. SERVED_IN
+## Relationship Hierarchy
 
-Connects people to the congresses they served in.
-
-**Direction:** `(Person)-[:SERVED_IN]->(Congress)`
-
-**Properties:**
-- `position` (string) - Role in congress ("senator" or "representative")
-- `type` (string) - Service type (typically "congress")
-
-**Example Cypher Query:**
-```cypher
-MATCH (p:Person)-[r:SERVED_IN]->(c:Congress)
-WHERE r.position = "senator"
-RETURN p.last_name, p.first_name, c.ordinal
+The database follows this hierarchy:
 ```
+Congress
+    ↑
+    | (BELONGS_TO)
+    |
+  Group (Chamber)
+    ↑
+    | (MEMBER_OF)
+    |
+  Person
+
+Congress
+    ↑
+    | (BELONGS_TO)
+    |
+  Committee
+```
+
+**Important:** There are NO direct relationships from Person to Congress. All person-congress connections go through the chamber (Group) nodes.
 
 ## Indexes
 
@@ -118,11 +178,16 @@ The following indexes are created for optimized query performance:
    - `(Congress).id`
    - `(Congress).congress_number`
 
-2. **Committee Indexes:**
+2. **Group Indexes:**
+   - `(Group).id`
+   - `(Group).type`
+   - `(Group).congress`
+
+3. **Committee Indexes:**
    - `(Committee).id`
    - `(Committee).name`
 
-3. **Person Indexes:**
+4. **Person Indexes:**
    - `(Person).id`
    - `(Person).full_name`
    - `(Person).last_name`
@@ -131,24 +196,31 @@ The following indexes are created for optimized query performance:
 
 ### Find all senators in a specific congress
 ```cypher
-MATCH (p:Person)-[r:SERVED_IN]->(c:Congress {congress_number: 20})
-WHERE r.position = "senator"
+MATCH (p:Person)-[:MEMBER_OF]->(g:Group {type: "chamber", subtype: "senate", congress: 20})
 RETURN p.last_name, p.first_name
 ORDER BY p.last_name
 ```
 
-### Find committees a person might be associated with in a congress
+### Find which chamber a person served in for each congress
 ```cypher
-MATCH (p:Person {last_name: "Angara"})-[:SERVED_IN]->(c:Congress)
-MATCH (com:Committee)-[:BELONGS_TO]->(c)
-RETURN DISTINCT com.name, c.ordinal
+MATCH (p:Person {last_name: "Aquino"})-[:MEMBER_OF]->(g:Group)-[:BELONGS_TO]->(c:Congress)
+RETURN p.first_name, p.last_name, g.subtype as chamber, c.ordinal
+ORDER BY c.congress_number
 ```
 
-### Count representatives vs senators by congress
+### Count senators vs representatives by congress
 ```cypher
-MATCH (p:Person)-[r:SERVED_IN]->(c:Congress)
-RETURN c.ordinal, r.position, COUNT(DISTINCT p) as count
-ORDER BY c.congress_number, r.position
+MATCH (g:Group {type: "chamber"})-[:BELONGS_TO]->(c:Congress)
+MATCH (p:Person)-[:MEMBER_OF]->(g)
+RETURN c.ordinal, g.subtype as chamber, COUNT(DISTINCT p) as member_count
+ORDER BY c.congress_number, g.subtype
+```
+
+### Find committees a person might be associated with in a congress
+```cypher
+MATCH (p:Person {last_name: "Angara"})-[:MEMBER_OF]->(g:Group)-[:BELONGS_TO]->(c:Congress)
+MATCH (com:Committee)-[:BELONGS_TO]->(c)
+RETURN DISTINCT com.name, c.ordinal
 ```
 
 ### Search for person by senate website key
@@ -160,9 +232,22 @@ RETURN p
 
 ### Find all congresses a person served in
 ```cypher
-MATCH (p:Person {last_name: "Aquino", first_name: "Benigno"})-[r:SERVED_IN]->(c:Congress)
-RETURN c.ordinal, r.position
+MATCH (p:Person {last_name: "Aquino", first_name: "Benigno"})-[:MEMBER_OF]->(g:Group)-[:BELONGS_TO]->(c:Congress)
+RETURN c.ordinal, g.subtype as chamber
 ORDER BY c.congress_number
+```
+
+### Get complete chamber membership for a congress
+```cypher
+// Get all Senate members for 20th Congress
+MATCH (c:Congress {congress_number: 20})<-[:BELONGS_TO]-(g:Group {type: "chamber", subtype: "senate"})<-[:MEMBER_OF]-(p:Person)
+RETURN p.last_name, p.first_name
+ORDER BY p.last_name
+
+// Get all House members for 20th Congress
+MATCH (c:Congress {congress_number: 20})<-[:BELONGS_TO]-(g:Group {type: "chamber", subtype: "house"})<-[:MEMBER_OF]-(p:Person)
+RETURN p.last_name, p.first_name
+ORDER BY p.last_name
 ```
 
 ## Data Import Process
@@ -171,16 +256,36 @@ The database is populated by `scripts/sync_to_neo4j.py` which:
 
 1. Reads TOML files from:
    - `data/congress/*.toml` - Congress entities
+   - `data/group/chamber/*.toml` - Chamber (Senate/House) entities
    - `data/committee/*.toml` - Committee entities
    - `data/person/*.toml` - Person entities
 
 2. Creates nodes with MERGE operations (create if not exists, update if exists)
 
 3. Establishes relationships based on:
-   - `congresses` array in committee TOML files → BELONGS_TO relationships
-   - `memberships` array in person TOML files → SERVED_IN relationships with position details
+   - Chamber TOML files contain `congress` field → creates BELONGS_TO relationships to Congress
+   - Committee TOML files contain `congresses` array → creates BELONGS_TO relationships to Congress
+   - Person TOML files contain `memberships` array with chamber details → creates MEMBER_OF relationships to appropriate Group nodes
 
 4. Creates indexes for optimized querying
+
+## Membership Structure in Person TOML Files
+
+Person files contain a `memberships` array that defines their chamber affiliations:
+
+```toml
+[[memberships]]
+type = "chamber"
+congress = 15
+subtype = "house"  # or "senate"
+
+[[memberships]]
+type = "chamber"
+congress = 16
+subtype = "senate"
+```
+
+This structure creates MEMBER_OF relationships to the corresponding chamber Group nodes.
 
 ## Connection Configuration
 
@@ -200,6 +305,7 @@ External REST APIs can query this database using the Neo4j driver for their resp
 - Complex filtering across multiple entity types
 - Aggregation queries for statistics
 - Full-text search on indexed properties
+- Clear separation between chambers (Senate/House)
 
 ## Notes for API Development
 
@@ -207,8 +313,11 @@ External REST APIs can query this database using the Neo4j driver for their resp
 
 2. **Optional Properties:** Not all properties are present on all nodes. Always handle potential null values in your queries.
 
-3. **Relationship Properties:** The `SERVED_IN` relationship includes properties that specify the role (senator/representative), allowing for role-specific queries.
+3. **Chamber Navigation:** To find which congress a person served in, you must traverse through the Group (chamber) node:
+   - Person → MEMBER_OF → Group → BELONGS_TO → Congress
 
 4. **Performance:** Use indexed properties in WHERE clauses when possible for optimal query performance.
 
 5. **Data Consistency:** The MERGE operations ensure no duplicate nodes are created based on the `id` property.
+
+6. **Chamber Types:** Always filter Group nodes by `type: "chamber"` when looking for Senate/House chambers, as the Group label may be used for other entity types in the future.

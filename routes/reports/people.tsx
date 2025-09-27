@@ -4,15 +4,15 @@ import type { Person } from "@/lib/types.ts";
 
 export const handler = define.handlers({
   async GET(_ctx) {
-    // Fetch all people with their congress history
+    // Fetch all people with their congress history through Group (chamber) memberships
     const peopleQuery = `
       MATCH (p:Person)
-      OPTIONAL MATCH (p)-[r:SERVED_IN]->(c:Congress)
+      OPTIONAL MATCH (p)-[:MEMBER_OF]->(g:Group {type: "chamber"})-[:BELONGS_TO]->(c:Congress)
       WITH p, COLLECT(DISTINCT {
         congress_id: c.id,
         congress_number: c.congress_number,
         congress_ordinal: c.ordinal,
-        position: r.position,
+        position: CASE WHEN g.subtype = 'senate' THEN 'senator' ELSE 'representative' END,
         year_range: c.year_range
       }) as congresses_served
       RETURN DISTINCT

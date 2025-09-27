@@ -22,12 +22,14 @@ export const handler: RouteHandler<PeopleResponse, State> = {
       const params: QueryParams = {};
 
       if (type) {
-        whereConditions.push("r.position = $type");
-        params.type = type;
+        // Map type to chamber subtype
+        const chamberType = type === 'senator' ? 'senate' : type === 'representative' ? 'house' : type;
+        whereConditions.push("g.subtype = $chamberType");
+        params.chamberType = chamberType;
       }
 
       if (congress) {
-        whereConditions.push("c.congress_number = $congress");
+        whereConditions.push("g.congress = $congress");
         params.congress = int(parseInt(congress));
       }
 
@@ -53,7 +55,7 @@ export const handler: RouteHandler<PeopleResponse, State> = {
       // Get total count
       const countQuery = congress || type
         ? `
-          MATCH (p:Person)-[r:SERVED_IN]->(c:Congress)
+          MATCH (p:Person)-[:MEMBER_OF]->(g:Group {type: "chamber"})
           ${whereClause}
           RETURN COUNT(DISTINCT p) as total
         `
@@ -70,18 +72,18 @@ export const handler: RouteHandler<PeopleResponse, State> = {
       // Get paginated results with congress membership
       const query = congress || type
         ? `
-          MATCH (p:Person)-[r:SERVED_IN]->(c:Congress)
+          MATCH (p:Person)-[:MEMBER_OF]->(g:Group {type: "chamber"})
           ${whereClause}
           WITH p
           ORDER BY p.last_name, p.first_name
           SKIP $offset
           LIMIT $limit
-          MATCH (p)-[r2:SERVED_IN]->(c2:Congress)
+          OPTIONAL MATCH (p)-[:MEMBER_OF]->(g2:Group {type: "chamber"})-[:BELONGS_TO]->(c2:Congress)
           WITH p, COLLECT(DISTINCT {
             congress_id: c2.id,
             congress_number: c2.congress_number,
             congress_ordinal: c2.ordinal,
-            position: r2.position,
+            position: CASE WHEN g2.subtype = 'senate' THEN 'senator' ELSE 'representative' END,
             year_range: c2.year_range
           }) as congresses_served
           RETURN DISTINCT
@@ -110,12 +112,12 @@ export const handler: RouteHandler<PeopleResponse, State> = {
           ORDER BY p.last_name, p.first_name
           SKIP $offset
           LIMIT $limit
-          OPTIONAL MATCH (p)-[r:SERVED_IN]->(c:Congress)
+          OPTIONAL MATCH (p)-[:MEMBER_OF]->(g:Group {type: "chamber"})-[:BELONGS_TO]->(c:Congress)
           WITH p, COLLECT(DISTINCT {
             congress_id: c.id,
             congress_number: c.congress_number,
             congress_ordinal: c.ordinal,
-            position: r.position,
+            position: CASE WHEN g.subtype = 'senate' THEN 'senator' ELSE 'representative' END,
             year_range: c.year_range
           }) as congresses_served
           RETURN DISTINCT

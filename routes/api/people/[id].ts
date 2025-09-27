@@ -53,16 +53,17 @@ export const handler: RouteHandler<PersonDetailResponse, State> = {
 
       const person = result[0];
 
-      // Get congress history
+      // Get congress history through Group (chamber) memberships
       const congressQuery = `
-        MATCH (p:Person {id: $id})-[r:SERVED_IN]->(c:Congress)
+        MATCH (p:Person {id: $id})-[:MEMBER_OF]->(g:Group {type: "chamber"})-[:BELONGS_TO]->(c:Congress)
         RETURN c.id as congress_id,
                c.congress_number as congress_number,
                c.ordinal as congress_ordinal,
-               r.position as position,
-               r.type as type,
+               CASE WHEN g.subtype = 'senate' THEN 'senator' ELSE 'representative' END as position,
+               g.subtype as chamber,
                c.start_date as start_date,
-               c.end_date as end_date
+               c.end_date as end_date,
+               c.year_range as year_range
         ORDER BY c.congress_number DESC
       `;
 
