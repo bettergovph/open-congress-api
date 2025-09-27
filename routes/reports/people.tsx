@@ -5,7 +5,7 @@ import type { Person } from "@/lib/types.ts";
 export const handler = define.handlers({
   async GET(_ctx) {
     // Fetch all people with their congress history
-    const query = `
+    const peopleQuery = `
       MATCH (p:Person)
       OPTIONAL MATCH (p)-[r:SERVED_IN]->(c:Congress)
       WITH p, COLLECT(DISTINCT {
@@ -35,19 +35,32 @@ export const handler = define.handlers({
       ORDER BY p.last_name, p.first_name
     `;
 
-    const people = (await runQuery(query) as unknown) as Person[];
+    // Fetch congress year ranges
+    const congressQuery = `
+      MATCH (c:Congress)
+      RETURN c.congress_number as congress_number,
+             c.ordinal as ordinal,
+             c.year_range as year_range
+      ORDER BY c.congress_number ASC
+    `;
 
-    return { data: { people } };
+    const people = (await runQuery(peopleQuery) as unknown) as Person[];
+    const congresses = (await runQuery(congressQuery) as unknown) as Array<{
+      congress_number: number;
+      ordinal: string;
+      year_range: string;
+    }>;
+
+    return { data: { people, congresses } };
   },
 });
 
-export default define.page<{ people: Person[] }>(function PeopleReportPage({ data }) {
+export default define.page<{ people: Person[]; congresses: Array<{ congress_number: number; ordinal: string; year_range: string; }> }>(function PeopleReportPage({ data }) {
   const people = data.people;
+  const congresses = data.congresses;
   return (
     <>
       <div class="px-4 py-8 mx-auto">
-        <h1 class="text-3xl font-bold mb-6">People Report</h1>
-
         <div class="mb-6 space-y-4">
           <div class="flex gap-4 flex-wrap">
             <input
@@ -94,6 +107,22 @@ export default define.page<{ people: Person[] }>(function PeopleReportPage({ dat
           <div class="text-sm text-gray-600">
             Total: <span id="totalCount">{people.length}</span> people
           </div>
+
+          <details class="bg-gray-50 border border-gray-200 rounded-lg p-3">
+            <summary class="text-sm text-gray-700 cursor-pointer hover:text-gray-900">
+              Congress Time Periods Reference
+            </summary>
+            <div class="mt-3 max-h-48 overflow-y-auto">
+              <div class="space-y-1 text-sm">
+                {congresses.map((c: { congress_number: number; ordinal: string; year_range: string; }) => (
+                  <div class="flex items-center py-0.5 hover:bg-gray-100 px-2 -mx-2 rounded">
+                    <span class="font-medium text-gray-700 w-24">{c.ordinal}</span>
+                    <span class="text-gray-600">{c.year_range}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </details>
         </div>
 
         <div class="overflow-x-auto">
@@ -140,6 +169,14 @@ export default define.page<{ people: Person[] }>(function PeopleReportPage({ dat
                     </svg>
                   </div>
                 </th>
+                <th class="border border-gray-300 px-4 py-2 text-left cursor-pointer hover:bg-gray-200" data-sort="aliases">
+                  <div class="flex items-center justify-between">
+                    <span>Aliases</span>
+                    <svg class="sort-indicator w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M7 10l5-5 5 5H7zM7 10l5 5 5-5H7z" opacity="0.5"/>
+                    </svg>
+                  </div>
+                </th>
                 <th class="border border-gray-300 px-4 py-2 text-left cursor-pointer hover:bg-gray-200" data-sort="positions">
                   <div class="flex items-center justify-between">
                     <span>Positions</span>
@@ -156,16 +193,11 @@ export default define.page<{ people: Person[] }>(function PeopleReportPage({ dat
                     </svg>
                   </div>
                 </th>
-                <th class="border border-gray-300 px-4 py-2 text-left cursor-pointer hover:bg-gray-200" data-sort="aliases">
-                  <div class="flex items-center justify-between">
-                    <span>Aliases</span>
-                    <svg class="sort-indicator w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M7 10l5-5 5 5H7zM7 10l5 5 5-5H7z" opacity="0.5"/>
-                    </svg>
-                  </div>
+                <th class="border border-gray-300 px-4 py-2 text-left">
+                  Data Issues
                 </th>
                 <th class="border border-gray-300 px-4 py-2 text-left">
-                  Missing Data
+                  API
                 </th>
               </tr>
             </thead>
@@ -180,10 +212,26 @@ export default define.page<{ people: Person[] }>(function PeopleReportPage({ dat
                 }
                 const positions = new Set(person.congresses_served?.map((c: CongressServed) => c.position).filter(Boolean));
                 const congressNumbers = person.congresses_served?.map((c: CongressServed) => c.congress_number).filter(Boolean).sort((a, b) => (b || 0) - (a || 0)) || [];
-                const missingFields = [];
+                const dataIssues = [];
 
-                if (!person.middle_name || person.middle_name.length === 1) missingFields.push("Middle");
-                if (!person.congresses_served || person.congresses_served.length === 0) missingFields.push("Congress");
+                if (!person.middle_name || person.middle_name.length === 1) dataIssues.push("Middle Name");
+                if (!person.congresses_served || person.congresses_served.length === 0) dataIssues.push("No Service Record");
+
+                // Check for duplicate congress service (same congress, different positions)
+                const congressPositions: { [key: number]: string[] } = {};
+                person.congresses_served?.forEach((c: CongressServed) => {
+                  if (c.congress_number && c.position) {
+                    if (!congressPositions[c.congress_number]) {
+                      congressPositions[c.congress_number] = [];
+                    }
+                    congressPositions[c.congress_number].push(c.position);
+                  }
+                });
+                Object.entries(congressPositions).forEach(([congress, positions]) => {
+                  if (positions.length > 1) {
+                    dataIssues.push(`Congress ${congress} (${positions.join(' & ')})`)
+                  }
+                });
 
                 return (
                   <tr class="hover:bg-gray-50 person-row" data-person={JSON.stringify(person)}>
@@ -210,6 +258,13 @@ export default define.page<{ people: Person[] }>(function PeopleReportPage({ dat
                       {person.name_suffix || ""}
                     </td>
                     <td class="border border-gray-300 px-4 py-2">
+                      {person.aliases && person.aliases.length > 0 ? (
+                        <span class="text-sm">
+                          {person.aliases.join(", ")}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td class="border border-gray-300 px-4 py-2">
                       {positions.size > 0 ? (
                         <div class="flex gap-1 flex-wrap">
                           {Array.from(positions).map((pos) => (
@@ -220,36 +275,39 @@ export default define.page<{ people: Person[] }>(function PeopleReportPage({ dat
                             </span>
                           ))}
                         </div>
-                      ) : (
-                        <span class="text-gray-400 italic">none</span>
-                      )}
+                      ) : null}
                     </td>
                     <td class="border border-gray-300 px-4 py-2">
                       {congressNumbers.length > 0 ? (
                         <span class="text-sm">
                           {congressNumbers.join(", ")}
                         </span>
-                      ) : (
-                        <span class="text-gray-400 italic">none</span>
-                      )}
-                    </td>
-                    <td class="border border-gray-300 px-4 py-2">
-                      {person.aliases && person.aliases.length > 0 ? (
-                        <span class="text-sm">
-                          {person.aliases.join(", ")}
-                        </span>
                       ) : null}
                     </td>
                     <td class="border border-gray-300 px-4 py-2">
-                      {missingFields.length > 0 ? (
+                      {dataIssues.length > 0 ? (
                         <div class="flex gap-1 flex-wrap">
-                          {missingFields.map(field => (
-                            <span class="inline-block px-2 py-1 text-xs bg-red-100 text-red-800 rounded">
-                              {field}
+                          {dataIssues.map(issue => (
+                            <span class={`inline-block px-2 py-1 text-xs rounded ${
+                              issue.includes('Congress') && issue.includes('&') ?
+                              'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {issue}
                             </span>
                           ))}
                         </div>
                       ) : null}
+                    </td>
+                    <td class="border border-gray-300 px-4 py-2">
+                      <a
+                        href={`/api/people/${person.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="text-blue-600 hover:underline text-sm"
+                      >
+                        JSON
+                      </a>
                     </td>
                   </tr>
                 );
@@ -285,6 +343,18 @@ export default define.page<{ people: Person[] }>(function PeopleReportPage({ dat
           let filteredPeople = [...allPeople];
           let currentSort = { field: null, direction: 'asc' };
 
+          // Get initial values from URL params
+          const urlParams = new URLSearchParams(window.location.search);
+          const initialSearch = urlParams.get('search') || '';
+          const initialPosition = urlParams.get('position') || '';
+          const initialCongress = urlParams.get('congress') || '';
+          const initialSort = urlParams.get('sort') || '';
+          const initialSortDir = urlParams.get('dir') || 'asc';
+
+          // Set initial values
+          document.getElementById('searchInput').value = initialSearch;
+          document.getElementById('positionFilter').value = initialPosition;
+
           // Populate congress filter
           const congressNumbers = new Set();
           allPeople.forEach(person => {
@@ -302,6 +372,12 @@ export default define.page<{ people: Person[] }>(function PeopleReportPage({ dat
             option.textContent = 'Congress ' + num;
             congressFilter.appendChild(option);
           });
+          congressFilter.value = initialCongress;
+
+          // Apply initial sort if specified
+          if (initialSort) {
+            currentSort = { field: initialSort, direction: initialSortDir };
+          }
 
           function renderTable() {
             const tbody = document.getElementById('peopleTableBody');
@@ -312,10 +388,26 @@ export default define.page<{ people: Person[] }>(function PeopleReportPage({ dat
             tbody.innerHTML = filteredPeople.map(person => {
               const positions = new Set(person.congresses_served?.map(c => c.position).filter(Boolean));
               const congressNumbers = person.congresses_served?.map(c => c.congress_number).filter(Boolean).sort((a, b) => b - a) || [];
-              const missingFields = [];
+              const dataIssues = [];
 
-              if (!person.middle_name || person.middle_name.length === 1) missingFields.push("Middle");
-              if (!person.congresses_served || person.congresses_served.length === 0) missingFields.push("Congress");
+              if (!person.middle_name || person.middle_name.length === 1) dataIssues.push("Middle Name");
+              if (!person.congresses_served || person.congresses_served.length === 0) dataIssues.push("No Service Record");
+
+              // Check for duplicate congress service
+              const congressPositions = {};
+              person.congresses_served?.forEach(c => {
+                if (c.congress_number && c.position) {
+                  if (!congressPositions[c.congress_number]) {
+                    congressPositions[c.congress_number] = [];
+                  }
+                  congressPositions[c.congress_number].push(c.position);
+                }
+              });
+              Object.entries(congressPositions).forEach(([congress, positions]) => {
+                if (positions.length > 1) {
+                  dataIssues.push('Congress ' + congress + ' (' + positions.join(' & ') + ')');
+                }
+              });
 
               return \`
                 <tr class="hover:bg-gray-50 person-row">
@@ -342,6 +434,11 @@ export default define.page<{ people: Person[] }>(function PeopleReportPage({ dat
                     \${person.name_suffix || ''}
                   </td>
                   <td class="border border-gray-300 px-4 py-2">
+                    \${person.aliases && person.aliases.length > 0 ?
+                      '<span class="text-sm">' + (person.aliases || []).join(", ") + '</span>'
+                      : ''}
+                  </td>
+                  <td class="border border-gray-300 px-4 py-2">
                     \${positions.size > 0 ?
                       '<div class="flex gap-1 flex-wrap">' +
                       Array.from(positions).map(pos =>
@@ -349,36 +446,64 @@ export default define.page<{ people: Person[] }>(function PeopleReportPage({ dat
                         (pos === 'senator' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800') +
                         '">' + pos + '</span>'
                       ).join('') + '</div>'
-                      : '<span class="text-gray-400 italic">none</span>'}
+                      : ''}
                   </td>
                   <td class="border border-gray-300 px-4 py-2">
                     \${congressNumbers.length > 0 ?
                       '<span class="text-sm">' + congressNumbers.join(", ") + '</span>'
-                      : '<span class="text-gray-400 italic">none</span>'}
-                  </td>
-                  <td class="border border-gray-300 px-4 py-2">
-                    \${person.aliases && person.aliases.length > 0 ?
-                      '<span class="text-sm">' + (person.aliases || []).join(", ") + '</span>'
                       : ''}
                   </td>
                   <td class="border border-gray-300 px-4 py-2">
-                    \${missingFields.length > 0 ?
+                    \${dataIssues.length > 0 ?
                       '<div class="flex gap-1 flex-wrap">' +
-                      missingFields.map(field =>
-                        '<span class="inline-block px-2 py-1 text-xs bg-red-100 text-red-800 rounded">' +
-                        field + '</span>'
+                      dataIssues.map(issue =>
+                        '<span class="inline-block px-2 py-1 text-xs rounded ' +
+                        (issue.includes('Congress') && issue.includes('&') ?
+                        'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800') +
+                        '">' + issue + '</span>'
                       ).join('') + '</div>'
                       : ''}
+                  </td>
+                  <td class="border border-gray-300 px-4 py-2">
+                    <a
+                      href="/api/people/\${person.id}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-blue-600 hover:underline text-sm"
+                    >
+                      JSON
+                    </a>
                   </td>
                 </tr>
               \`;
             }).join('');
           }
 
+          function updateURL() {
+            const searchTerm = document.getElementById('searchInput').value;
+            const positionFilter = document.getElementById('positionFilter').value;
+            const congressFilter = document.getElementById('congressFilter').value;
+
+            const params = new URLSearchParams();
+            if (searchTerm) params.set('search', searchTerm);
+            if (positionFilter) params.set('position', positionFilter);
+            if (congressFilter) params.set('congress', congressFilter);
+            if (currentSort.field) {
+              params.set('sort', currentSort.field);
+              params.set('dir', currentSort.direction);
+            }
+
+            const newURL = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+            window.history.replaceState({}, '', newURL);
+          }
+
           function applyFilters() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const positionFilter = document.getElementById('positionFilter').value;
             const congressFilter = document.getElementById('congressFilter').value;
+
+            updateURL();
 
             filteredPeople = allPeople.filter(person => {
               // Search filter
@@ -472,6 +597,7 @@ export default define.page<{ people: Person[] }>(function PeopleReportPage({ dat
               }
             }
 
+            updateURL();
             renderTable();
           }
 
@@ -479,6 +605,9 @@ export default define.page<{ people: Person[] }>(function PeopleReportPage({ dat
           document.getElementById('searchInput').addEventListener('input', applyFilters);
           document.getElementById('positionFilter').addEventListener('change', applyFilters);
           document.getElementById('congressFilter').addEventListener('change', applyFilters);
+
+          // Apply initial filters
+          applyFilters();
 
           document.getElementById('resetFilters').addEventListener('click', () => {
             document.getElementById('searchInput').value = '';
@@ -489,6 +618,7 @@ export default define.page<{ people: Person[] }>(function PeopleReportPage({ dat
             document.querySelectorAll('.sort-indicator').forEach(el => {
               el.innerHTML = '<path d=\"M7 10l5-5 5 5H7zM7 10l5 5 5-5H7z\" opacity=\"0.5\"/>';
             });
+            updateURL();
             renderTable();
           });
 
