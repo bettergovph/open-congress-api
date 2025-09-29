@@ -460,6 +460,14 @@ export default define.page<PageData>(function BillsReportPage({ data }) {
                       >
                         API
                       </a>
+                      <a
+                        href="https://github.com/bettergovph/open-congress-data/blob/main/data/document/\${bill.subtype.toLowerCase()}/\${bill.congress}/\${bill.id}.toml"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="text-blue-600 hover:underline text-xs"
+                      >
+                        Source
+                      </a>
                       \${bill.senate_website_permalink ? \`
                         <a
                           href="\${bill.senate_website_permalink}"
