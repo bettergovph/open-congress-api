@@ -271,7 +271,7 @@ export default define.page<PageData>(function BillsReportPage({ data }) {
                 <li>Set your filters and click "Search" to load bills from the database</li>
                 <li>Use pagination controls to navigate through results</li>
                 <li>Most House Bills do not have filing dates in the source data</li>
-                <li>For API access, see the <a href="/API.md" class="underline">API documentation</a></li>
+                <li>For API access, see the <a href="https://github.com/bettergovph/open-congress-api/blob/main/API.md" class="underline" target="_blank" rel="noopener noreferrer">API documentation</a></li>
               </ul>
             </div>
           </div>
