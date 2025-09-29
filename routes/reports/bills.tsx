@@ -406,11 +406,27 @@ export default define.page<PageData>(function BillsReportPage({ data }) {
                   <td class="border border-gray-300 px-4 py-2">
                     <div class="flex flex-wrap gap-1">
                       \${bill.authors && bill.authors.length > 0 ?
-                        bill.authors.map(a => \`
-                          <span class="inline-block px-2 py-0.5 text-xs bg-gray-100 text-gray-700 rounded">
-                            \${a.full_name}
-                          </span>
-                        \`).join('') :
+                        bill.authors.map(a => {
+                          // Build the full name with aliases
+                          const parts = [];
+                          if (a.first_name) parts.push(a.first_name);
+                          if (a.aliases && a.aliases.length > 0) {
+                            parts.push('"' + a.aliases[0] + '"');
+                          }
+                          if (a.middle_name) parts.push(a.middle_name);
+                          if (a.last_name) parts.push(a.last_name);
+                          if (a.name_suffix) parts.push(a.name_suffix);
+
+                          const displayName = parts.join(' ');
+                          const hasMultipleAliases = a.aliases && a.aliases.length > 1;
+
+                          return \`
+                            <span class="inline-block px-2 py-0.5 text-xs bg-gray-100 text-gray-700 rounded"
+                                  \${hasMultipleAliases ? \`title="Also known as: \${a.aliases.slice(1).join(', ')}"\` : ''}>
+                              \${displayName}
+                            </span>
+                          \`;
+                        }).join('') :
                         '<span class="text-sm text-gray-400">—</span>'}
                     </div>
                   </td>

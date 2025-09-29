@@ -123,7 +123,7 @@ export const handler: RouteHandler<BillsResponse, State> = {
           middle_name: p.middle_name,
           last_name: p.last_name,
           name_suffix: p.name_suffix,
-          full_name: COALESCE(p.full_name, p.first_name + ' ' + p.last_name)
+          aliases: p.aliases
         }) as authors
         RETURN
           d.id as id,
