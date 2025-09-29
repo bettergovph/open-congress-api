@@ -197,6 +197,127 @@ GET /api/committees/:id
 GET /api/committees/:id/members
 ```
 
+### Bill/Document Endpoints
+
+#### List All Bills
+```http
+GET /api/bills
+```
+
+Query Parameters:
+- `congress` (integer): Filter by congress number
+- `type` (string): Filter by type ("hb" for House Bills, "sb" for Senate Bills)
+- `author` (string): Filter by author's last name
+- `search` (string): Search in bill title
+- `date_from` (string): Filter by date filed (ISO date)
+- `date_to` (string): Filter by date filed (ISO date)
+- `limit` (integer): Items per page
+- `offset` (integer): Items to skip
+
+Example:
+```bash
+curl "http://localhost:5173/api/bills?congress=19&type=sb"
+```
+
+#### Get Bill by ID or Number
+```http
+GET /api/bills/:id
+```
+
+Parameters:
+- `id`: Bill ULID or bill number (e.g., "HB00001", "SB00001")
+
+Example:
+```bash
+curl "http://localhost:5173/api/bills/HB00001"
+```
+
+#### Get Bill Authors
+```http
+GET /api/bills/:id/authors
+```
+
+Returns all authors of a specific bill.
+
+Example:
+```bash
+curl "http://localhost:5173/api/bills/SB00001/authors"
+```
+
+#### Get Person's Authored Bills
+```http
+GET /api/people/:id/bills
+```
+
+Query Parameters:
+- `congress` (integer): Filter by congress number
+- `type` (string): Filter by bill type ("hb" or "sb")
+- `limit` (integer): Items per page
+- `offset` (integer): Items to skip
+
+Returns all bills authored by a specific person.
+
+Example:
+```bash
+curl "http://localhost:5173/api/people/01H8ZXR5KBQZ.../bills?congress=19"
+```
+
+#### Get Congress Bills
+```http
+GET /api/congresses/:id/bills
+```
+
+Query Parameters:
+- `type` (string): Filter by type ("hb", "sb", or "all")
+- `author` (string): Filter by author's last name
+- `limit` (integer): Items per page
+- `offset` (integer): Items to skip
+
+Returns all bills filed in a specific congress.
+
+Example:
+```bash
+curl "http://localhost:5173/api/congresses/19/bills?type=hb"
+```
+
+### Statistics Endpoint
+
+#### Overall Statistics
+```http
+GET /api/stats
+```
+
+Returns comprehensive statistics about the database including:
+- Total counts for bills, people, congresses, and committees
+- Breakdown of bills by type (House vs Senate)
+- Bills by congress
+- Bills with and without filing dates
+
+Example response:
+```json
+{
+  "success": true,
+  "data": {
+    "total_bills": 54321,
+    "total_house_bills": 32109,
+    "total_senate_bills": 22212,
+    "total_congresses": 20,
+    "total_people": 2134,
+    "total_committees": 450,
+    "bills_with_dates": 1234,
+    "bills_without_dates": 53087,
+    "bills_by_congress": [
+      {
+        "congress": 20,
+        "total": 3456,
+        "house_bills": 2100,
+        "senate_bills": 1356
+      }
+    ]
+  }
+}
+```
+
 ### Search & Statistics Endpoints (To Be Implemented)
 
 #### Global Search
@@ -206,7 +327,7 @@ GET /api/search
 
 Query Parameters:
 - `q` (string): Search query
-- `type` (string): Entity type ("congress", "person", "committee", or "all")
+- `type` (string): Entity type ("congress", "person", "committee", "bill", or "all")
 - `limit` (integer): Items per page
 - `offset` (integer): Items to skip
 
@@ -222,17 +343,27 @@ Returns general statistics about the database.
 GET /api/stats/congress/:id
 ```
 
-Returns detailed statistics for a specific congress.
+Returns detailed statistics for a specific congress, including bill counts.
 
 ## Database Architecture
 
 The API uses a Neo4j graph database with the following structure:
-- **Person** nodes represent senators and representatives
-- **Group** nodes represent chambers (Senate/House) for each congress
 - **Congress** nodes represent congressional sessions
-- Relationships: Person → MEMBER_OF → Group → BELONGS_TO → Congress
+- **Group** nodes represent chambers (Senate/House) for each congress
+- **Person** nodes represent senators and representatives
+- **Committee** nodes represent congressional committees
+- **Document** nodes represent legislative bills (House Bills and Senate Bills)
 
-This structure allows tracking of people's service across multiple congresses and chambers.
+Key relationships:
+- Person → MEMBER_OF → Group → BELONGS_TO → Congress
+- Committee → BELONGS_TO → Congress
+- Person → AUTHORED → Document → FILED_IN → Congress
+
+This structure allows tracking of:
+- People's service across multiple congresses and chambers
+- Bill authorship and co-authorship
+- Committee memberships
+- Legislative activity by congress
 
 ## Data Models
 
@@ -301,6 +432,28 @@ This structure allows tracking of people's service across multiple congresses an
   congress_id?: string;
   congress_number?: number;
   congress_ordinal?: string;
+}
+```
+
+### Bill/Document
+```typescript
+{
+  id: string;
+  type: "document";
+  subtype: "hb" | "sb";
+  bill_number: string;
+  congress: number;
+  title: string;
+  long_title?: string;
+  date_filed?: string;
+  scope?: string;
+  subjects?: string[];
+  authors_raw?: string;
+  senate_website_permalink?: string;
+  download_url_sources?: string[];
+  // Extended when fetching single bill
+  authors?: Person[];
+  congress_details?: Congress;
 }
 ```
 
@@ -387,6 +540,91 @@ Response:
       "start_date": "2019-06-30",
       "end_date": "2022-06-30",
       "year_range": "2019-2022"
+    }
+  ]
+}
+```
+
+### Get Senate Bills from 19th Congress
+```bash
+curl "http://localhost:5173/api/bills?congress=19&type=sb&limit=10"
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "01H8ZXR5KB...",
+      "bill_number": "SB00001",
+      "title": "Better Healthcare Act",
+      "date_filed": "2019-07-01",
+      "congress": 19,
+      "subtype": "sb"
+    }
+  ],
+  "pagination": {
+    "total": 2500,
+    "limit": 10,
+    "offset": 0,
+    "has_more": true,
+    "next_cursor": "10"
+  }
+}
+```
+
+### Get Authors of a Bill
+```bash
+curl "http://localhost:5173/api/bills/SB00001/authors"
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "01H8ZXR5KBQZ...",
+      "first_name": "Juan",
+      "last_name": "Dela Cruz",
+      "full_name": "Juan Dela Cruz"
+    },
+    {
+      "id": "01H8ZXR5KBQY...",
+      "first_name": "Maria",
+      "last_name": "Santos",
+      "full_name": "Maria Santos"
+    }
+  ]
+}
+```
+
+### Get Bills Authored by a Person
+```bash
+curl "http://localhost:5173/api/people/01H8ZXR5KBQZ.../bills?congress=19"
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "01H8ZXR5KB...",
+      "bill_number": "SB00001",
+      "title": "Better Healthcare Act",
+      "date_filed": "2019-07-01",
+      "congress": 19,
+      "subtype": "sb"
+    },
+    {
+      "id": "01H8ZXR5KC...",
+      "bill_number": "SB00015",
+      "title": "Education Reform Act",
+      "date_filed": "2019-07-15",
+      "congress": 19,
+      "subtype": "sb"
     }
   ]
 }

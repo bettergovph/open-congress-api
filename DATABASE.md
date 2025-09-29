@@ -102,6 +102,41 @@ WHERE p.last_name = "Aquino"
 RETURN p
 ```
 
+### 5. Document Node
+
+Represents legislative documents such as House Bills (HB) and Senate Bills (SB).
+
+**Label:** `Document`
+
+**Properties:**
+- `id` (string, required) - Unique identifier (ULID format)
+- `type` (string) - Document type (e.g., "document")
+- `subtype` (string) - Document subtype (e.g., "hb", "sb")
+- `name` (string) - Document name/identifier
+- `bill_number` (string) - Bill number (e.g., "HB00001", "SB00001")
+- `congress` (integer) - Congress number when filed
+- `title` (string) - Short title of the bill
+- `date_filed` (string) - Date when the bill was filed (YYYY-MM-DD)
+- `long_title` (string) - Full descriptive title of the bill
+- `scope` (string) - Scope of the bill (e.g., "National")
+- `subjects` (array of strings) - Subject categories
+- `authors_raw` (string) - Raw author information from source
+- `senate_website_permalink` (string) - Permalink to Senate website
+- `download_url_sources` (array of strings) - URLs to download the document
+
+**Example Cypher Query:**
+```cypher
+// Find all Senate Bills in 19th Congress
+MATCH (d:Document {subtype: "sb", congress: 19})
+RETURN d.bill_number, d.title
+ORDER BY d.bill_number
+
+// Find House Bills by bill number
+MATCH (d:Document)
+WHERE d.bill_number = "HB00001"
+RETURN d
+```
+
 ## Relationships
 
 ### 1. MEMBER_OF
@@ -147,6 +182,46 @@ MATCH (com:Committee)-[:BELONGS_TO]->(con:Congress {congress_number: 20})
 RETURN com.name, con.name
 ```
 
+### 3. AUTHORED
+
+Connects people to the documents they authored.
+
+**Direction:** `(Person)-[:AUTHORED]->(Document)`
+
+**Properties:** None
+
+**Example Cypher Query:**
+```cypher
+// Find all bills authored by a specific person
+MATCH (p:Person {last_name: "Marcos"})-[:AUTHORED]->(d:Document)
+RETURN p.full_name, d.bill_number, d.title
+
+// Find authors of a specific bill
+MATCH (p:Person)-[:AUTHORED]->(d:Document {bill_number: "SB00001"})
+RETURN p.last_name, p.first_name
+```
+
+### 4. FILED_IN
+
+Connects documents to the congress they were filed in.
+
+**Direction:** `(Document)-[:FILED_IN]->(Congress)`
+
+**Properties:** None
+
+**Example Cypher Query:**
+```cypher
+// Find all bills filed in 19th Congress
+MATCH (d:Document)-[:FILED_IN]->(c:Congress {congress_number: 19})
+RETURN d.bill_number, d.title, d.subtype
+ORDER BY d.bill_number
+
+// Count bills by congress
+MATCH (d:Document)-[:FILED_IN]->(c:Congress)
+RETURN c.ordinal, COUNT(d) as bill_count
+ORDER BY c.congress_number
+```
+
 ## Relationship Hierarchy
 
 The database follows this hierarchy:
@@ -160,6 +235,14 @@ Congress
     | (MEMBER_OF)
     |
   Person
+    |
+    | (AUTHORED)
+    ↓
+  Document
+    |
+    | (FILED_IN)
+    ↓
+  Congress
 
 Congress
     ↑
@@ -168,7 +251,10 @@ Congress
   Committee
 ```
 
-**Important:** There are NO direct relationships from Person to Congress. All person-congress connections go through the chamber (Group) nodes.
+**Important:**
+- There are NO direct relationships from Person to Congress. All person-congress connections go through the chamber (Group) nodes.
+- Documents are connected to Congress via FILED_IN relationships
+- Documents are connected to their authors (Person nodes) via AUTHORED relationships
 
 ## Indexes
 
@@ -191,6 +277,12 @@ The following indexes are created for optimized query performance:
    - `(Person).id`
    - `(Person).full_name`
    - `(Person).last_name`
+
+5. **Document Indexes:**
+   - `(Document).id`
+   - `(Document).name`
+   - `(Document).congress`
+   - `(Document).bill_number`
 
 ## Common Query Patterns
 
@@ -250,6 +342,33 @@ RETURN p.last_name, p.first_name
 ORDER BY p.last_name
 ```
 
+### Find bills authored by senators in a specific congress
+```cypher
+MATCH (p:Person)-[:MEMBER_OF]->(g:Group {type: "chamber", subtype: "senate", congress: 19})
+MATCH (p)-[:AUTHORED]->(d:Document)-[:FILED_IN]->(c:Congress {congress_number: 19})
+RETURN p.last_name, p.first_name, d.bill_number, d.title
+ORDER BY p.last_name, d.bill_number
+```
+
+### Get bill authorship statistics
+```cypher
+// Count bills per author in 19th Congress
+MATCH (p:Person)-[:AUTHORED]->(d:Document)-[:FILED_IN]->(c:Congress {congress_number: 19})
+RETURN p.last_name, p.first_name, COUNT(d) as bills_authored
+ORDER BY bills_authored DESC
+LIMIT 10
+```
+
+### Find co-authored bills
+```cypher
+// Find bills with multiple authors
+MATCH (d:Document)<-[:AUTHORED]-(p:Person)
+WITH d, COLLECT(p) as authors
+WHERE SIZE(authors) > 1
+RETURN d.bill_number, d.title, [a IN authors | a.last_name + ", " + a.first_name] as author_names
+ORDER BY d.bill_number
+```
+
 ## Data Import Process
 
 The database is populated by `scripts/sync_to_neo4j.py` which:
@@ -259,15 +378,53 @@ The database is populated by `scripts/sync_to_neo4j.py` which:
    - `data/group/chamber/*.toml` - Chamber (Senate/House) entities
    - `data/committee/*.toml` - Committee entities
    - `data/person/*.toml` - Person entities
+   - `data/person/.senate-website-key-mapping.yml` - Mapping of Senate website keys to person IDs
+   - `data/document/hb/[congress]/*.toml` - House Bill documents
+   - `data/document/sb/[congress]/*.toml` - Senate Bill documents
 
-2. Creates nodes with MERGE operations (create if not exists, update if exists)
+2. Creates nodes with MERGE operations (create if not exists, update if exists) using batch operations for performance
 
 3. Establishes relationships based on:
    - Chamber TOML files contain `congress` field → creates BELONGS_TO relationships to Congress
    - Committee TOML files contain `congresses` array → creates BELONGS_TO relationships to Congress
    - Person TOML files contain `memberships` array with chamber details → creates MEMBER_OF relationships to appropriate Group nodes
+   - Document TOML files contain:
+     - `meta.congress` → creates FILED_IN relationships to Congress
+     - `meta.senate_website_author_codes` → creates AUTHORED relationships from Person nodes (using the mapping file)
 
 4. Creates indexes for optimized querying
+
+### Performance Optimizations
+
+The sync script uses several optimizations for faster data import:
+- **Batch operations**: Processes multiple nodes in single transactions using UNWIND
+- **Reduced network round trips**: Groups related operations together
+- **Progress tracking**: Shows ETA and processing rate for large datasets
+- **Configurable batch sizes**: Adjustable batch sizes for different entity types
+- **Fast mode for CI/CD**:
+  - 1000-document batches (vs 500 in normal mode)
+  - Sequential loading with progress tracking to avoid hangs
+  - Optimized for complete database rebuilds
+  - Reduces sync time significantly through larger batch sizes
+
+### Command Line Options
+
+```bash
+# Normal sync (update existing data)
+python scripts/sync_to_neo4j.py
+
+# Clear database first (will prompt for confirmation)
+python scripts/sync_to_neo4j.py --clear
+
+# Clear database without confirmation (for CI/CD)
+python scripts/sync_to_neo4j.py --clear --yes
+
+# Fast mode with larger batches (optimized for CI/CD)
+python scripts/sync_to_neo4j.py --fast
+
+# Full CI/CD mode (clear + fast) - recommended for production deployments
+python scripts/sync_to_neo4j.py --clear --yes --fast
+```
 
 ## Membership Structure in Person TOML Files
 

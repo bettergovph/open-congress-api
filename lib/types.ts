@@ -59,6 +59,26 @@ export interface Committee {
   congress_ordinal?: string;
 }
 
+export interface Bill {
+  id: string;
+  type: string;  // "bill"
+  subtype: string;  // "HB" | "SB"
+  name?: string;  // e.g., "SBN-02674" or "HBN-00001"
+  bill_number?: number;  // e.g., 2674
+  congress?: number;
+  title?: string;
+  long_title?: string;
+  date_filed?: string;
+  scope?: string;
+  subjects?: string[];
+  authors_raw?: string;
+  senate_website_permalink?: string;
+  download_url_sources?: string[];
+  // Extended properties
+  authors?: Person[];
+  congress_details?: Congress;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
