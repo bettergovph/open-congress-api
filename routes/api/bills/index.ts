@@ -12,6 +12,7 @@ export const handler: RouteHandler<BillsResponse, State> = {
       const url = new URL(ctx.req.url);
       const congress = url.searchParams.get("congress");
       const type = url.searchParams.get("type"); // 'HB' or 'SB'
+      const scope = url.searchParams.get("scope"); // 'National', 'Local', or 'Both'
       const author = url.searchParams.get("author");
       const search = url.searchParams.get("search");
       const date_from = url.searchParams.get("date_from");
@@ -37,6 +38,11 @@ export const handler: RouteHandler<BillsResponse, State> = {
         params.type = upperType;
       }
 
+      if (scope) {
+        whereConditions.push("d.scope = $scope");
+        params.scope = scope;
+      }
+
       if (author) {
         whereConditions.push(`
           EXISTS {
@@ -52,7 +58,9 @@ export const handler: RouteHandler<BillsResponse, State> = {
           toLower(d.title) CONTAINS toLower($search) OR
           toLower(d.long_title) CONTAINS toLower($search) OR
           toLower(d.name) CONTAINS toLower($search) OR
-          toLower(d.authors_raw) CONTAINS toLower($search)
+          toLower(d.authors_raw) CONTAINS toLower($search) OR
+          toLower(d.congress_website_title) CONTAINS toLower($search) OR
+          toLower(d.congress_website_abstract) CONTAINS toLower($search)
         )`);
         params.search = search;
       }
@@ -95,7 +103,7 @@ export const handler: RouteHandler<BillsResponse, State> = {
           orderByClause = `d.date_filed ${dir}, d.name`;
           break;
         case "title":
-          orderByClause = `d.title ${dir}, d.name`;
+          orderByClause = `COALESCE(d.title, d.congress_website_title) ${dir}, d.name`;
           break;
         case "scope":
           orderByClause = `d.scope ${dir}, d.name`;
@@ -134,6 +142,8 @@ export const handler: RouteHandler<BillsResponse, State> = {
           d.congress as congress,
           d.title as title,
           d.long_title as long_title,
+          d.congress_website_title as congress_website_title,
+          d.congress_website_abstract as congress_website_abstract,
           d.date_filed as date_filed,
           d.scope as scope,
           d.subjects as subjects,

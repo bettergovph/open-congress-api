@@ -92,6 +92,8 @@ export const handler: RouteHandler<BillsResponse, State> = {
           d.congress as congress,
           d.title as title,
           d.long_title as long_title,
+          d.congress_website_title as congress_website_title,
+          d.congress_website_abstract as congress_website_abstract,
           d.date_filed as date_filed,
           d.scope as scope,
           d.subjects as subjects,

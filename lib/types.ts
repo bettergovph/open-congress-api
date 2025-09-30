@@ -68,6 +68,8 @@ export interface Bill {
   congress?: number;
   title?: string;
   long_title?: string;
+  congress_website_title?: string;
+  congress_website_abstract?: string;
   date_filed?: string;
   scope?: string;
   subjects?: string[];

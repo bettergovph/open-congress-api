@@ -101,6 +101,20 @@ export default define.page<PageData>(function BillsReportPage({ data }) {
               </div>
             </div>
 
+            <div class="relative">
+              <select id="scopeFilter" class="appearance-none px-4 py-2 pr-10 border rounded-lg bg-white">
+                <option value="">All Scopes</option>
+                <option value="National">National</option>
+                <option value="Local">Local</option>
+                <option value="Both">Both</option>
+              </select>
+              <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </div>
+            </div>
+
             <button
               type="button"
               id="searchButton"
@@ -125,7 +139,7 @@ export default define.page<PageData>(function BillsReportPage({ data }) {
           </div>
 
           {/* Pagination controls at top */}
-          <div class="flex items-center justify-between">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div class="flex items-center gap-2">
               <button
                 type="button"
@@ -135,7 +149,7 @@ export default define.page<PageData>(function BillsReportPage({ data }) {
               >
                 Previous
               </button>
-              <span class="text-sm">
+              <span class="text-sm whitespace-nowrap">
                 Page <span id="currentPage">1</span> of <span id="totalPages">1</span>
               </span>
               <button
@@ -148,7 +162,7 @@ export default define.page<PageData>(function BillsReportPage({ data }) {
               </button>
             </div>
             <div class="flex items-center gap-2">
-              <label class="text-sm">Items per page:</label>
+              <label class="text-sm whitespace-nowrap">Items per page:</label>
               <div class="relative">
                 <select id="limitSelect" class="appearance-none px-3 py-1 pr-8 border rounded bg-white">
                   <option value="20">20</option>
@@ -165,8 +179,6 @@ export default define.page<PageData>(function BillsReportPage({ data }) {
           </div>
         </div>
 
-        <div class="overflow-x-auto">
-
           <div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
             <div class="flex items-start">
               <svg class="w-5 h-5 text-yellow-600 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -178,6 +190,8 @@ export default define.page<PageData>(function BillsReportPage({ data }) {
               </div>
             </div>
           </div>
+
+        <div class="overflow-x-auto">
           
           <table class="min-w-full border-collapse border border-gray-300">
             <thead class="bg-gray-100">
@@ -232,7 +246,7 @@ export default define.page<PageData>(function BillsReportPage({ data }) {
         </div>
 
         {/* Pagination controls at bottom */}
-        <div class="mt-4 flex items-center justify-between">
+        <div class="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div class="flex items-center gap-2">
             <button
               type="button"
@@ -242,7 +256,7 @@ export default define.page<PageData>(function BillsReportPage({ data }) {
             >
               Previous
             </button>
-            <span class="text-sm">
+            <span class="text-sm whitespace-nowrap">
               Page <span id="currentPageBottom">1</span> of <span id="totalPagesBottom">1</span>
             </span>
             <button
@@ -254,19 +268,19 @@ export default define.page<PageData>(function BillsReportPage({ data }) {
               Next
             </button>
           </div>
-          <div class="text-sm text-gray-600">
-            Jump to page:
+          <div class="flex items-center gap-2 text-sm text-gray-600">
+            <label class="whitespace-nowrap">Jump to page:</label>
             <input
               type="number"
               id="pageJump"
               min="1"
               defaultValue="1"
-              class="ml-2 w-16 px-2 py-1 border rounded"
+              class="w-16 px-2 py-1 border rounded"
             />
             <button
               type="button"
               id="goToPage"
-              class="ml-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+              class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
             >
               Go
             </button>
@@ -304,6 +318,7 @@ export default define.page<PageData>(function BillsReportPage({ data }) {
           const searchInput = document.getElementById('searchInput');
           const typeFilter = document.getElementById('typeFilter');
           const congressFilter = document.getElementById('congressFilter');
+          const scopeFilter = document.getElementById('scopeFilter');
           const limitSelect = document.getElementById('limitSelect');
           const searchButton = document.getElementById('searchButton');
           const resetButton = document.getElementById('resetFilters');
@@ -326,6 +341,7 @@ export default define.page<PageData>(function BillsReportPage({ data }) {
           if (urlParams.get('search')) searchInput.value = urlParams.get('search');
           if (urlParams.get('type')) typeFilter.value = urlParams.get('type');
           if (urlParams.get('congress')) congressFilter.value = urlParams.get('congress');
+          if (urlParams.get('scope')) scopeFilter.value = urlParams.get('scope');
           if (urlParams.get('limit')) {
             currentLimit = parseInt(urlParams.get('limit'));
             limitSelect.value = currentLimit;
@@ -345,6 +361,7 @@ export default define.page<PageData>(function BillsReportPage({ data }) {
             if (searchInput.value) params.set('search', searchInput.value);
             if (typeFilter.value) params.set('type', typeFilter.value);
             if (congressFilter.value) params.set('congress', congressFilter.value);
+            if (scopeFilter.value) params.set('scope', scopeFilter.value);
             params.set('limit', currentLimit);
             if (currentOffset > 0) params.set('offset', currentOffset);
             params.set('sort', currentSort);
@@ -360,6 +377,7 @@ export default define.page<PageData>(function BillsReportPage({ data }) {
             if (searchInput.value) params.set('search', searchInput.value);
             if (typeFilter.value) params.set('type', typeFilter.value);
             if (congressFilter.value) params.set('congress', congressFilter.value);
+            if (scopeFilter.value) params.set('scope', scopeFilter.value);
             params.set('limit', currentLimit);
             params.set('offset', currentOffset);
             params.set('sort', currentSort);
@@ -411,9 +429,9 @@ export default define.page<PageData>(function BillsReportPage({ data }) {
                   </td>
                   <td class="border border-gray-300 px-4 py-2">
                     <div class="space-y-1">
-                      \${bill.title ? \`<div class="text-sm font-medium">\${bill.title}</div>\` : ''}
-                      \${bill.long_title ? \`<div class="text-xs text-gray-600">\${bill.long_title}</div>\` : ''}
-                      \${!bill.title && !bill.long_title ? '<div class="text-sm text-gray-400">Untitled</div>' : ''}
+                      \${(bill.title || bill.congress_website_title) ? \`<div class="text-sm font-medium">\${bill.title || bill.congress_website_title}</div>\` : ''}
+                      \${(bill.long_title || bill.congress_website_abstract) ? \`<div class="text-xs text-gray-600">\${bill.long_title || bill.congress_website_abstract}</div>\` : ''}
+                      \${!bill.title && !bill.long_title && !bill.congress_website_title && !bill.congress_website_abstract ? '<div class="text-sm text-gray-400">Untitled</div>' : ''}
                     </div>
                   </td>
                   <td class="border border-gray-300 px-4 py-2">
@@ -505,13 +523,13 @@ export default define.page<PageData>(function BillsReportPage({ data }) {
             const endItem = Math.min(currentOffset + currentLimit, pagination.total);
             const rangeText = pagination.total > 0 ? \`\${startItem}-\${endItem}\` : '0';
             document.getElementById('showingRange').textContent = rangeText;
-            document.getElementById('filteredTotal').textContent = pagination.total;
+            document.getElementById('filteredTotal').textContent = pagination.total.toLocaleString();
 
             // Update page numbers
-            currentPageEl.textContent = currentPage;
-            totalPagesEl.textContent = totalPages;
-            currentPageBottomEl.textContent = currentPage;
-            totalPagesBottomEl.textContent = totalPages;
+            currentPageEl.textContent = currentPage.toLocaleString();
+            totalPagesEl.textContent = totalPages.toLocaleString();
+            currentPageBottomEl.textContent = currentPage.toLocaleString();
+            totalPagesBottomEl.textContent = totalPages.toLocaleString();
             pageJump.value = currentPage;
             pageJump.max = totalPages;
 
@@ -532,6 +550,7 @@ export default define.page<PageData>(function BillsReportPage({ data }) {
             searchInput.value = '';
             typeFilter.value = '';
             congressFilter.value = '';
+            scopeFilter.value = '';
             currentOffset = 0;
             loadBills();
           });

@@ -1,0 +1,39 @@
+name: API Health Check
+
+on:
+  schedule:
+    # Run once every day at 00:00 UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    if: github.repository == 'bettergovph/open-congress-api'
+    steps:
+      - name: Check API Health
+        run: |
+          response=$(curl -s -w "\n%{http_code}" https://open-congress-api.bettergov.ph/api/ping)
+          http_code=$(echo "$response" | tail -n 1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "HTTP Status: $http_code"
+          echo "Response Body: $body"
+
+          if [ "$http_code" -ne 200 ]; then
+            echo "::error::API health check failed with status $http_code"
+            exit 1
+          fi
+
+          # Check if the response indicates success
+          if ! echo "$body" | grep -q '"success":true'; then
+            echo "::error::API returned unsuccessful status"
+            exit 1
+          fi
+
+          echo "✅ API is healthy"
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::warning::API health check failed. Please investigate."
