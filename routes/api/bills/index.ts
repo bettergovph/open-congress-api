@@ -57,10 +57,16 @@ export const handler: RouteHandler<BillsResponse, State> = {
         whereConditions.push(`(
           toLower(d.title) CONTAINS toLower($search) OR
           toLower(d.long_title) CONTAINS toLower($search) OR
+          toLower(d.abstract) CONTAINS toLower($search) OR
           toLower(d.name) CONTAINS toLower($search) OR
-          toLower(d.authors_raw) CONTAINS toLower($search) OR
           toLower(d.congress_website_title) CONTAINS toLower($search) OR
-          toLower(d.congress_website_abstract) CONTAINS toLower($search)
+          toLower(d.congress_website_abstract) CONTAINS toLower($search) OR
+          EXISTS {
+            MATCH (d)<-[:AUTHORED]-(p:Person)
+            WHERE toLower(p.first_name) CONTAINS toLower($search) OR
+                  toLower(p.last_name) CONTAINS toLower($search) OR
+                  ANY(alias IN p.aliases WHERE toLower(alias) CONTAINS toLower($search))
+          }
         )`);
         params.search = search;
       }
