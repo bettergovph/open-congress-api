@@ -1,30 +1,55 @@
-import { App, staticFiles } from "fresh";
-import { define, type State } from "./utils.ts";
+import { OpenAPIHono } from "@hono/zod-openapi";
+import { swaggerUI } from "@hono/swagger-ui";
+import { Hono } from "hono";
+import { congressesRouter } from "./routes/congresses.ts";
+import { peopleRouter } from "./routes/people.ts";
+import { billsRouter } from "./routes/bills.ts";
+import { statsRouter } from "./routes/stats.ts";
+import { pingRouter } from "./routes/ping.ts";
+import { LandingPage } from "./components/LandingPage.tsx";
+// import { viewBillsRouter } from "./routes/view-bills.tsx";
+// import { viewPeopleRouter } from "./routes/view-people.tsx";
 
-export const app = new App<State>();
+const app = new Hono({ strict: false });
+const apiApp = new OpenAPIHono({ strict: false });
 
-app.use(staticFiles());
+// Register API routes
+apiApp.route("/", congressesRouter);
+apiApp.route("/", peopleRouter);
+apiApp.route("/", billsRouter);
+apiApp.route("/", statsRouter);
+apiApp.route("/", pingRouter);
 
-// Pass a shared value from a middleware
-app.use(async (ctx) => {
-  ctx.state.shared = "hello";
-  return await ctx.next();
+// The OpenAPI documentation will be available at /api/doc
+apiApp.doc("/doc", {
+  openapi: "3.0.0",
+  info: {
+    version: "1.0.0",
+    title: "Open Congress API",
+    description:
+      "A modern REST API for Philippine Congress data powered by Neo4j graph database.",
+  },
+  servers: [
+    {
+      url: "/api",
+      description: "API server",
+    },
+  ],
 });
 
-// this is the same as the /api/:name route defined via a file. feel free to delete this!
-app.get("/api2/:name", (ctx) => {
-  const name = ctx.params.name;
-  return new Response(
-    `Hello, ${name.charAt(0).toUpperCase() + name.slice(1)}!`,
-  );
+// Mount the API app under /api
+app.route("/api", apiApp);
+
+// Swagger UI at /api
+app.get("/api", swaggerUI({ url: "/api/doc", title: "Open Congress API" }));
+
+// Mount view/dashboard pages (will be implemented later)
+// app.route("/", viewBillsRouter);
+// app.route("/", viewPeopleRouter);
+
+// Landing page at root
+app.get("/", (c) => {
+  return c.html(LandingPage());
 });
 
-// this can also be defined via a file. feel free to delete this!
-const exampleLoggerMiddleware = define.middleware((ctx) => {
-  console.log(`${ctx.req.method} ${ctx.req.url}`);
-  return ctx.next();
-});
-app.use(exampleLoggerMiddleware);
-
-// Include file-system based routes here
-app.fsRoutes();
+Deno.serve(app.fetch);

@@ -237,7 +237,7 @@ export default define.page<PageData>(function BillsReportPage({ data }) {
             </thead>
             <tbody id="billsTableBody">
               <tr>
-                <td colspan="7" class="border border-gray-300 px-4 py-8 text-center text-gray-500">
+                <td colspan={7} class="border border-gray-300 px-4 py-8 text-center text-gray-500">
                   Click "Search" to load bills
                 </td>
               </tr>
