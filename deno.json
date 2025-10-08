@@ -1,62 +1,19 @@
 {
-  "nodeModulesDir": "auto",
   "tasks": {
-    "check": "deno fmt --check . && deno lint . && deno check",
-    "dev": "vite",
-    "build": "vite build",
-    "start": "deno serve -A _fresh/server.js",
-    "update": "deno run -A -r jsr:@fresh/update ."
+    "start": "deno run -A --watch main.ts"
   },
-  "lint": {
-    "rules": {
-      "tags": [
-        "fresh",
-        "recommended"
-      ]
-    }
-  },
-  "exclude": [
-    "**/_fresh/*"
-  ],
   "imports": {
     "@/": "./",
+    "@hono/zod-openapi": "npm:@hono/zod-openapi@^0.18.4",
+    "@hono/swagger-ui": "npm:@hono/swagger-ui@^0.5.2",
+    "hono": "npm:hono@^4.9.9",
+    "hono/jsx": "npm:hono@^4.9.9/jsx",
+    "zod": "npm:zod@^3.24.1",
     "dotenv": "npm:dotenv@^17.2.2",
-    "fresh": "jsr:@fresh/core@^2.1.1",
-    "neo4j-driver-lite": "npm:neo4j-driver-lite@^5.28.2",
-    "preact": "npm:preact@^10.27.2",
-    "@preact/signals": "npm:@preact/signals@^2.3.1",
-    "@fresh/plugin-vite": "jsr:@fresh/plugin-vite@^1.0.4",
-    "vite": "npm:vite@^7.1.3",
-    "tailwindcss": "npm:tailwindcss@^4.1.10",
-    "@tailwindcss/vite": "npm:@tailwindcss/vite@^4.1.12"
+    "neo4j-driver-lite": "npm:neo4j-driver-lite@^5.28.2"
   },
   "compilerOptions": {
-    "lib": [
-      "dom",
-      "dom.asynciterable",
-      "dom.iterable",
-      "deno.ns"
-    ],
-    "jsx": "precompile",
-    "jsxImportSource": "preact",
-    "jsxPrecompileSkipElements": [
-      "a",
-      "img",
-      "source",
-      "body",
-      "html",
-      "head",
-      "title",
-      "meta",
-      "script",
-      "link",
-      "style",
-      "base",
-      "noscript",
-      "template"
-    ],
-    "types": [
-      "vite/client"
-    ]
+    "jsx": "react-jsx",
+    "jsxImportSource": "hono/jsx"
   }
 }

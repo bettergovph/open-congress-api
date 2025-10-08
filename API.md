@@ -59,13 +59,25 @@ GET /api/congresses
 Query Parameters:
 - `year` (integer): Filter by year
 - `ordinal` (string): Filter by ordinal (e.g., "20th")
+- `include_stats` (string): Include member counts and bill statistics (set to "true")
 - `limit` (integer): Items per page
 - `offset` (integer): Items to skip
 
 Example:
 ```bash
 curl "http://localhost:5173/api/congresses?year=2020&limit=10"
+
+# With statistics
+curl "http://localhost:5173/api/congresses?include_stats=true&limit=10"
 ```
+
+When `include_stats=true` is provided, each congress object will include:
+- `total_senators`: Number of senators in this congress
+- `total_representatives`: Number of representatives in this congress
+- `total_committees`: Number of committees in this congress
+- `total_bills`: Total number of bills filed
+- `total_house_bills`: Number of House Bills filed
+- `total_senate_bills`: Number of Senate Bills filed
 
 #### Get Congress by ID or Number
 ```http
@@ -155,10 +167,18 @@ GET /api/people/:id
 Parameters:
 - `id`: Person ULID
 
+Query Parameters:
+- `include_congresses` (string): Include congress memberships (set to "true")
+
 Example:
 ```bash
 curl "http://localhost:5173/api/people/01H8ZXR5KBQZ..."
+
+# With congress memberships
+curl "http://localhost:5173/api/people/01H8ZXR5KBQZ...?include_congresses=true"
 ```
+
+When `include_congresses=true` is provided, the person object will include a `congresses` array with membership details (congress number, ordinal, group name, and position).
 
 #### Get Person's Congress History
 ```http
@@ -380,10 +400,13 @@ This structure allows tracking of:
   start_year?: number;
   end_year?: number;
   year_range?: string;
-  // Extended with stats when fetching single congress
+  // Extended with stats when fetching single congress or when include_stats=true
   total_senators?: number;
   total_representatives?: number;
   total_committees?: number;
+  total_bills?: number;
+  total_house_bills?: number;
+  total_senate_bills?: number;
 }
 ```
 
