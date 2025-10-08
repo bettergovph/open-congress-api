@@ -48,6 +48,31 @@ app.route("/api", apiApp);
 // Swagger UI at /api
 app.get("/api", swaggerUI({ url: "/api/doc", title: "Open Congress API" }));
 
+// Scalar UI at /api/scalar
+app.get("/api/scalar", (c) => {
+  return c.html(`<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Open Congress API - Scalar Documentation</title>
+</head>
+<body>
+  <script
+    id="api-reference"
+    data-url="/api/doc"
+    data-configuration='${JSON.stringify({
+      theme: "purple",
+      layout: "modern",
+      showSidebar: true,
+      darkMode: false,
+      customCss: ""
+    })}'></script>
+  <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+</body>
+</html>`);
+});
+
 // Mount view/dashboard pages
 app.route("/", viewDocumentsRouter);
 app.route("/", viewDocumentDetailRouter);

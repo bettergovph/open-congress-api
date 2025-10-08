@@ -177,7 +177,7 @@ export const LandingPage = () => {
 
             <!-- API Card -->
             <a
-              href="/api"
+              href="/api/scalar"
               class="block bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-primary-300 transition-all duration-200"
             >
               <div class="flex items-center mb-4">
