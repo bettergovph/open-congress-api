@@ -32,9 +32,31 @@ The API will be available at `http://localhost:8000`
 
 ## Available Endpoints
 
+### API Endpoints
 - **API**: `http://localhost:8000/api/*` - REST API endpoints
 - **Swagger UI**: `http://localhost:8000/api` - Interactive API documentation
 - **OpenAPI Spec**: `http://localhost:8000/api/doc` - OpenAPI 3.0 JSON specification
+
+### Web UI
+- **Home**: `http://localhost:8000/` - Landing page with quick access links
+- **Congresses**: `http://localhost:8000/view/congresses` - Browse all Philippine congresses with statistics
+- **Congress Detail**: `http://localhost:8000/view/congresses/{congressNumber}` - View senators and representatives for a specific congress
+- **Documents**: `http://localhost:8000/view/documents` - Browse and search legislative documents (House Bills and Senate Bills)
+- **Document Detail**: `http://localhost:8000/view/documents/{documentId}` - View individual document details, authors, and metadata
+- **People**: `http://localhost:8000/view/people` - Browse senators and representatives with filtering
+- **Person Detail**: `http://localhost:8000/view/people/{personId}` - View individual legislator profiles, congress memberships, and authored bills
+
+## Web UI Features
+
+The application includes a modern web interface for browsing Philippine Congress data:
+
+- **Responsive Design**: Built with Tailwind CSS, mobile-friendly layouts
+- **Search & Filters**: Filter documents by congress, type, scope; filter people by congress, type, name
+- **Sortable Tables**: Click column headers to sort data
+- **Detailed Views**: Individual pages for each congress, document, and person with complete metadata
+- **Congress Cards**: Visual representation of Senate vs House members and bills filed
+- **Breadcrumb Navigation**: Easy navigation between related pages
+- **Direct Links**: Copy IDs, view API data, access original source documents
 
 ## API Documentation
 
@@ -69,15 +91,19 @@ The API queries a Neo4j graph database with the following structure:
 
 ### Node Types
 - **Congress** - Congressional sessions (e.g., 20th Congress)
+- **Group** - Chambers (Senate or House of Representatives) within each congress
 - **Person** - Senators and Representatives
 - **Committee** - Congressional committees
 - **Document** - Legislative bills (subtype: HB or SB)
 
 ### Relationships
-- `(Person)-[:SERVED_IN]->(Congress)` - Person served in a congress (with position: senator/representative)
+- `(Person)-[:MEMBER_OF]->(Group)` - Person is a member of a chamber (Senate or House)
+- `(Group)-[:BELONGS_TO]->(Congress)` - Chamber belongs to a congress
 - `(Person)-[:AUTHORED]->(Document)` - Person authored a bill
 - `(Committee)-[:BELONGS_TO]->(Congress)` - Committee belongs to a congress
 - `(Document)-[:FILED_IN]->(Congress)` - Bill was filed in a congress
+
+**Note**: There is no direct Person-to-Congress relationship. To find which congress a person served in, traverse through the Group (chamber) node: `Person → MEMBER_OF → Group → BELONGS_TO → Congress`
 
 ### Query Patterns
 
@@ -86,6 +112,17 @@ All Neo4j queries are documented in the route files:
 - `routes/people.ts` - Person-related queries
 - `routes/bills.ts` - Bill-related queries
 - `routes/stats.ts` - Statistics queries
+
+### View Routes
+
+Web UI routes are implemented using server-side rendering with Hono:
+- `routes/view/congresses.tsx` - Congress list and detail pages
+- `routes/view/documents.tsx` - Document list page
+- `routes/view/document-detail.tsx` - Document detail page
+- `routes/view/people.tsx` - People list page
+- `routes/view/person-detail.tsx` - Person detail page
+- `components/Layout.tsx` - Shared header and footer components
+- `components/LandingPage.tsx` - Home page
 
 ## Impostor Syndrome Disclaimer
 
