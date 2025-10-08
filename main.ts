@@ -10,6 +10,8 @@ import { viewDocumentsRouter } from "./routes/view/documents.tsx";
 import { viewDocumentDetailRouter } from "./routes/view/document-detail.tsx";
 import { viewPeopleRouter } from "./routes/view/people.tsx";
 import { viewPersonDetailRouter } from "./routes/view/person-detail.tsx";
+import { viewCongressesRouter } from "./routes/view/congresses.tsx";
+import { viewCongressDetailRouter } from "./routes/view/congress-detail.tsx";
 import { LandingPage } from "./components/LandingPage.tsx";
 // import { viewBillsRouter } from "./routes/view-bills.tsx";
 
@@ -51,6 +53,8 @@ app.route("/", viewDocumentsRouter);
 app.route("/", viewDocumentDetailRouter);
 app.route("/", viewPeopleRouter);
 app.route("/", viewPersonDetailRouter);
+app.route("/", viewCongressesRouter);
+app.route("/", viewCongressDetailRouter);
 // app.route("/", viewBillsRouter);
 
 // Landing page at root

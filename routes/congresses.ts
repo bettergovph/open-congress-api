@@ -32,6 +32,7 @@ const listCongressesRoute = createRoute({
     query: z.object({
       year: z.string().optional().openapi({ example: "2022", description: "Filter by year (matches if within start_year and end_year)" }),
       ordinal: z.string().optional().openapi({ example: "20th", description: "Filter by ordinal (e.g., '20th')" }),
+      include_stats: z.string().optional().openapi({ example: "true", description: "Include member counts (senators, representatives, committees)" }),
       limit: z.string().optional().openapi({ example: "20", description: "Items per page (max 100)" }),
       offset: z.string().optional().openapi({ example: "0", description: "Number of items to skip" }),
     }),
@@ -59,7 +60,7 @@ const listCongressesRoute = createRoute({
 
 congressesRouter.openapi(listCongressesRoute, async (c) => {
   try {
-    const { year, ordinal, limit: limitStr, offset: offsetStr } = c.req.valid("query");
+    const { year, ordinal, include_stats, limit: limitStr, offset: offsetStr } = c.req.valid("query");
     const limit = Math.min(parseInt(limitStr || "20"), 100);
     const offset = parseInt(offsetStr || "0");
 
@@ -107,6 +108,50 @@ congressesRouter.openapi(listCongressesRoute, async (c) => {
     params.limit = int(limit);
 
     const congresses = await runQuery(query, params) as Congress[];
+
+    // Add stats if requested
+    if (include_stats === "true" && congresses.length > 0) {
+      const toNumber = (val: unknown) => {
+        if (typeof val === 'object' && val !== null && 'low' in val) {
+          return (val as { low: number }).low;
+        }
+        return Number(val) || 0;
+      };
+
+      for (const congress of congresses) {
+        const statsQuery = `
+          MATCH (c:Congress {id: $congress_id})
+          OPTIONAL MATCH (p:Person)-[:MEMBER_OF]->(g:Group)-[:BELONGS_TO]->(c)
+          WITH c, g, COUNT(DISTINCT p) as member_count
+          WITH c,
+               SUM(CASE WHEN g.name CONTAINS 'Senate' THEN member_count ELSE 0 END) as total_senators,
+               SUM(CASE WHEN g.name CONTAINS 'House' THEN member_count ELSE 0 END) as total_representatives
+          OPTIONAL MATCH (com:Committee)-[:BELONGS_TO]->(c)
+          WITH c, total_senators, total_representatives, COUNT(DISTINCT com) as total_committees
+          OPTIONAL MATCH (d:Document)-[:FILED_IN]->(c)
+          WHERE d.type = 'bill'
+          RETURN total_senators,
+                 total_representatives,
+                 total_committees,
+                 COUNT(DISTINCT CASE WHEN d.subtype = 'HB' THEN d END) as total_house_bills,
+                 COUNT(DISTINCT CASE WHEN d.subtype = 'SB' THEN d END) as total_senate_bills,
+                 COUNT(DISTINCT d) as total_bills
+        `;
+
+        const statsParams = { congress_id: congress.id };
+        const stats = await runQuery(statsQuery, statsParams);
+
+        if (stats && stats[0]) {
+          (congress as Congress & { total_senators?: number; total_representatives?: number; total_committees?: number; total_bills?: number; total_house_bills?: number; total_senate_bills?: number }).total_senators = toNumber(stats[0].total_senators);
+          (congress as Congress & { total_senators?: number; total_representatives?: number; total_committees?: number; total_bills?: number; total_house_bills?: number; total_senate_bills?: number }).total_representatives = toNumber(stats[0].total_representatives);
+          (congress as Congress & { total_senators?: number; total_representatives?: number; total_committees?: number; total_bills?: number; total_house_bills?: number; total_senate_bills?: number }).total_committees = toNumber(stats[0].total_committees);
+          (congress as Congress & { total_senators?: number; total_representatives?: number; total_committees?: number; total_bills?: number; total_house_bills?: number; total_senate_bills?: number }).total_bills = toNumber(stats[0].total_bills);
+          (congress as Congress & { total_senators?: number; total_representatives?: number; total_committees?: number; total_bills?: number; total_house_bills?: number; total_senate_bills?: number }).total_house_bills = toNumber(stats[0].total_house_bills);
+          (congress as Congress & { total_senators?: number; total_representatives?: number; total_committees?: number; total_bills?: number; total_house_bills?: number; total_senate_bills?: number }).total_senate_bills = toNumber(stats[0].total_senate_bills);
+        }
+      }
+    }
+
     const has_more = offset + congresses.length < total;
 
     return c.json({

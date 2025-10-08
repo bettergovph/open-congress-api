@@ -90,7 +90,7 @@ export const LandingPage = () => {
                 <div class="text-center">
                   <div class="bg-secondary-50 rounded-lg p-6">
                     <div class="text-3xl font-bold text-secondary-600">\${stats.total_people.toLocaleString()}</div>
-                    <div class="text-sm text-gray-600 mt-2">Legislators</div>
+                    <div class="text-sm text-gray-600 mt-2">People</div>
                   </div>
                 </div>
                 <div class="text-center">
@@ -120,7 +120,25 @@ export const LandingPage = () => {
         <div class="container mx-auto px-4">
           <div class="max-w-6xl mx-auto">
             <h3 class="text-2xl font-bold text-gray-900 mb-8 text-center">Quick Access</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Congresses Card -->
+            <a
+              href="/view/congresses"
+              class="block bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-primary-300 transition-all duration-200"
+            >
+              <div class="flex items-center mb-4">
+                <div class="bg-secondary-100 p-3 rounded-full">
+                  <svg class="w-6 h-6 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                  </svg>
+                </div>
+                <h4 class="ml-3 text-lg font-semibold text-gray-900">Congresses</h4>
+              </div>
+              <p class="text-sm text-gray-600">
+                View all congressional sessions with member counts and legislative statistics
+              </p>
+            </a>
+
             <!-- Documents Card -->
             <a
               href="/view/documents"
@@ -163,8 +181,8 @@ export const LandingPage = () => {
               class="block bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-primary-300 transition-all duration-200"
             >
               <div class="flex items-center mb-4">
-                <div class="bg-secondary-100 p-3 rounded-full">
-                  <svg class="w-6 h-6 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="bg-gray-100 p-3 rounded-full">
+                  <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
                   </svg>
                 </div>
