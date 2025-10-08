@@ -34,6 +34,7 @@ The API will be available at `http://localhost:8000`
 
 ### API Endpoints
 - **API**: `http://localhost:8000/api/*` - REST API endpoints
+- **Scalar Docs**: `http://localhost:8000/api/scalar` - Beautiful API documentation powered by [Scalar](https://scalar.com)
 - **Swagger UI**: `http://localhost:8000/api` - Interactive API documentation
 - **OpenAPI Spec**: `http://localhost:8000/api/doc` - OpenAPI 3.0 JSON specification
 
@@ -60,12 +61,35 @@ The application includes a modern web interface for browsing Philippine Congress
 
 ## API Documentation
 
-All API endpoints are **automatically documented** using [@hono/zod-openapi](https://github.com/honojs/middleware/tree/main/packages/zod-openapi). The Swagger UI at `/api` provides:
+All API endpoints are **automatically documented** using [@hono/zod-openapi](https://github.com/honojs/middleware/tree/main/packages/zod-openapi).
 
-- Interactive API explorer
-- Request/response schemas with examples
-- Type-safe request validation via Zod
-- Try-it-out functionality for testing endpoints
+### Available Documentation Viewers
+
+- **Scalar** (`/api/scalar`) - Modern, beautiful API documentation with:
+  - Clean, responsive design
+  - Dark mode support
+  - Code examples in multiple languages
+  - Interactive API testing
+  - Superior UX for browsing large APIs
+
+- **Swagger UI** (`/api`) - Classic API explorer with:
+  - Interactive API explorer
+  - Request/response schemas with examples
+  - Type-safe request validation via Zod
+  - Try-it-out functionality for testing endpoints
+
+### Publishing to Scalar Galaxy
+
+To publish your API to [Scalar Galaxy](https://galaxy.scalar.com/) (Scalar's API registry):
+
+1. Visit https://galaxy.scalar.com/
+2. Sign up or log in
+3. Click "Add API" or "Import API"
+4. Provide your OpenAPI spec URL: `https://your-domain.com/api/doc`
+5. Configure API details (name, description, visibility)
+6. Publish
+
+Your API will be discoverable in Scalar's public registry and get a shareable documentation URL.
 
 Each route file (`routes/*.ts`) includes comprehensive inline documentation of the Neo4j Cypher queries used:
 
