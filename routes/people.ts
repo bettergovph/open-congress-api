@@ -39,6 +39,8 @@ const listPeopleRoute = createRoute({
       congress: z.string().optional().openapi({ example: "20", description: "Filter by congress number" }),
       last_name: z.string().optional().openapi({ description: "Filter by exact last name" }),
       search: z.string().optional().openapi({ description: "Search in names and aliases" }),
+      sort: z.string().optional().openapi({ example: "last_name", description: "Sort field: first_name, middle_name, last_name, name_suffix" }),
+      dir: z.string().optional().openapi({ example: "asc", description: "Sort direction: asc or desc" }),
       limit: z.string().optional().openapi({ example: "20" }),
       offset: z.string().optional().openapi({ example: "0" }),
     }),
@@ -71,6 +73,8 @@ peopleRouter.openapi(listPeopleRoute, async (c) => {
       congress,
       last_name,
       search,
+      sort = "last_name",
+      dir = "asc",
       limit: limitStr,
       offset: offsetStr,
     } = c.req.valid("query");
@@ -85,12 +89,16 @@ peopleRouter.openapi(listPeopleRoute, async (c) => {
 
     if (type || congress) {
       matchClause = `
-        MATCH (p:Person)-[r:SERVED_IN]->(c:Congress)
+        MATCH (p:Person)-[:MEMBER_OF]->(g:Group)-[:BELONGS_TO]->(c:Congress)
       `;
 
       if (type) {
-        whereConditions.push("r.position = $position");
-        params.position = type;
+        // Filter by group type: Senate for senators, House for representatives
+        if (type.toLowerCase() === 'senator') {
+          whereConditions.push("g.name CONTAINS 'Senate'");
+        } else if (type.toLowerCase() === 'representative') {
+          whereConditions.push("g.name CONTAINS 'House'");
+        }
       }
 
       if (congress) {
@@ -129,12 +137,18 @@ peopleRouter.openapi(listPeopleRoute, async (c) => {
     const totalRaw = countResult[0]?.total || 0;
     const total: number = typeof totalRaw === 'object' && 'low' in totalRaw ? (totalRaw as { low: number }).low : Number(totalRaw);
 
+    // Build ORDER BY clause
+    const allowedSortFields = ["first_name", "middle_name", "last_name", "name_suffix"];
+    const sortField = allowedSortFields.includes(sort) ? sort : "last_name";
+    const sortDirection = dir.toLowerCase() === "desc" ? "DESC" : "ASC";
+    const orderByClause = `p.${sortField} ${sortDirection}, p.last_name ${sortDirection}, p.first_name ${sortDirection}`;
+
     // Get paginated results
     const query = `
       ${matchClause}
       ${whereClause}
       WITH DISTINCT p
-      ORDER BY p.last_name, p.first_name
+      ORDER BY ${orderByClause}
       SKIP $offset
       LIMIT $limit
       RETURN
@@ -205,6 +219,12 @@ const getPersonRoute = createRoute({
         example: "01H8ZXR5KBQZ...",
       }),
     }),
+    query: z.object({
+      include_congresses: z.string().optional().openapi({
+        example: "true",
+        description: "Include congresses served via MEMBER_OF and BELONGS_TO relationships"
+      }),
+    }),
   },
   responses: {
     200: {
@@ -238,6 +258,7 @@ const getPersonRoute = createRoute({
 peopleRouter.openapi(getPersonRoute, async (c) => {
   try {
     const { id } = c.req.valid("param");
+    const { include_congresses } = c.req.valid("query");
 
     const query = `
       MATCH (p:Person {id: $id})
@@ -268,9 +289,39 @@ peopleRouter.openapi(getPersonRoute, async (c) => {
       }, 404);
     }
 
+    const person = result[0];
+
+    // If include_congresses is requested, fetch congresses served
+    if (include_congresses === "true") {
+      const congressQuery = `
+        MATCH (p:Person {id: $id})-[:MEMBER_OF]->(g:Group)-[:BELONGS_TO]->(c:Congress)
+        RETURN
+          c.congress_number as congress_number,
+          c.ordinal as congress_ordinal,
+          g.name as group_name,
+          CASE
+            WHEN g.name CONTAINS 'Senate' THEN 'Senator'
+            WHEN g.name CONTAINS 'House' THEN 'Representative'
+            ELSE 'Member'
+          END as position
+        ORDER BY c.congress_number DESC
+      `;
+
+      const congressResult = await runQuery(congressQuery, { id });
+
+      // Add congresses_served to the person object
+      (person as any).congresses_served = congressResult.map((row: any) => ({
+        congress_number: typeof row.congress_number === 'object' && 'low' in row.congress_number
+          ? row.congress_number.low
+          : Number(row.congress_number),
+        congress_ordinal: row.congress_ordinal,
+        position: row.position,
+      }));
+    }
+
     return c.json({
       success: true,
-      data: result[0],
+      data: person,
     }, 200);
   } catch (error) {
     console.error("Person detail error:", error);

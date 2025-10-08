@@ -6,9 +6,10 @@ import { peopleRouter } from "./routes/people.ts";
 import { billsRouter } from "./routes/bills.ts";
 import { statsRouter } from "./routes/stats.ts";
 import { pingRouter } from "./routes/ping.ts";
+import { viewDocumentsRouter } from "./routes/view/documents.tsx";
+import { viewPeopleRouter } from "./routes/view/people.tsx";
 import { LandingPage } from "./components/LandingPage.tsx";
 // import { viewBillsRouter } from "./routes/view-bills.tsx";
-// import { viewPeopleRouter } from "./routes/view-people.tsx";
 
 const app = new Hono({ strict: false });
 const apiApp = new OpenAPIHono({ strict: false });
@@ -43,9 +44,10 @@ app.route("/api", apiApp);
 // Swagger UI at /api
 app.get("/api", swaggerUI({ url: "/api/doc", title: "Open Congress API" }));
 
-// Mount view/dashboard pages (will be implemented later)
+// Mount view/dashboard pages
+app.route("/", viewDocumentsRouter);
+app.route("/", viewPeopleRouter);
 // app.route("/", viewBillsRouter);
-// app.route("/", viewPeopleRouter);
 
 // Landing page at root
 app.get("/", (c) => {
