@@ -100,7 +100,14 @@ viewCongressDetailRouter.get("/view/congresses/:congressNumber", async (c) => {
           const formatName = (person) => {
             const parts = [];
             if (person.first_name) parts.push(person.first_name);
-            if (person.middle_name) parts.push(person.middle_name);
+
+            // Add aliases in double quotes after first name with line break
+            if (person.aliases && person.aliases.length > 0) {
+              const aliasStr = Array.isArray(person.aliases) ? person.aliases.join('/') : person.aliases;
+              parts.push(\`<br>"\${aliasStr}"\`);
+            }
+
+            if (person.middle_name) parts.push(\`<br>\${person.middle_name}\`);
             if (person.last_name) parts.push(person.last_name);
             if (person.name_suffix) parts.push(person.name_suffix);
             return parts.join(' ');
@@ -127,11 +134,11 @@ viewCongressDetailRouter.get("/view/congresses/:congressNumber", async (c) => {
                   <div class="\${bgColor} text-white rounded-full w-20 h-20 flex items-center justify-center text-2xl font-bold mb-3">
                     \${initials}
                   </div>
-                  <h3 class="font-semibold text-gray-900 text-sm leading-tight min-h-[2.5rem] flex items-center">
+                  <div class="font-semibold text-gray-900 text-sm leading-tight break-words w-full">
                     \${name}
-                  </h3>
+                  </div>
                   \${person.professional_designations ? \`
-                    <p class="text-xs text-gray-500 mt-1">\${person.professional_designations}</p>
+                    <p class="text-xs text-gray-500 mt-1 break-words">\${person.professional_designations}</p>
                   \` : ''}
                 </div>
               </a>
