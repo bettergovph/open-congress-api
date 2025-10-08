@@ -41,15 +41,9 @@ viewPersonDetailRouter.get("/view/people/:id", async (c) => {
 
         <!-- Person Header -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <div class="flex items-start justify-between mb-4">
-            <div class="flex-1">
-              <h1 id="personName" class="text-3xl font-bold text-gray-900 mb-3"></h1>
-              <div class="flex flex-wrap gap-2 mb-3" id="professionalDesignations"></div>
-              <div class="flex flex-wrap gap-2" id="aliases"></div>
-            </div>
-          </div>
+          <h1 id="personName" class="text-3xl font-bold text-gray-900 mb-6"></h1>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <dt class="text-sm font-medium text-gray-500">First Name</dt>
               <dd id="firstName" class="mt-1 text-sm text-gray-900">—</dd>
@@ -65,6 +59,14 @@ viewPersonDetailRouter.get("/view/people/:id", async (c) => {
             <div>
               <dt class="text-sm font-medium text-gray-500">Name Suffix</dt>
               <dd id="nameSuffix" class="mt-1 text-sm text-gray-900">—</dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Aliases</dt>
+              <dd id="aliases" class="mt-1 text-sm text-gray-900">—</dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Professional Designations</dt>
+              <dd id="professionalDesignations" class="mt-1 text-sm text-gray-900">—</dd>
             </div>
           </div>
         </div>
@@ -168,31 +170,42 @@ viewPersonDetailRouter.get("/view/people/:id", async (c) => {
           // Build full name
           const nameParts = [];
           if (person.first_name) nameParts.push(person.first_name);
+
+          // Add aliases in double quotes after first name
+          if (person.aliases && person.aliases.length > 0) {
+            const aliasStr = Array.isArray(person.aliases) ? person.aliases.join('/') : person.aliases;
+            nameParts.push(\`"\${aliasStr}"\`);
+          }
+
           if (person.middle_name) nameParts.push(person.middle_name);
           if (person.last_name) nameParts.push(person.last_name);
           if (person.name_suffix) nameParts.push(person.name_suffix);
           const fullName = nameParts.join(' ') || 'Unknown Person';
 
-          // Update breadcrumb
+          // Update breadcrumb (use same format as header with aliases)
           document.getElementById('breadcrumbName').textContent = fullName;
 
           // Update header
           document.getElementById('personName').textContent = fullName;
 
-          // Professional designations
-          const professionalDesignations = document.getElementById('professionalDesignations');
-          if (person.professional_designations && person.professional_designations.length > 0) {
-            professionalDesignations.innerHTML = person.professional_designations.map(desig =>
-              \`<span class="inline-block px-3 py-1 text-sm bg-primary-100 text-primary-800 rounded-md font-medium">\${desig}</span>\`
-            ).join('');
+          // Aliases - show as text
+          const aliasesEl = document.getElementById('aliases');
+          if (person.aliases && person.aliases.length > 0) {
+            aliasesEl.textContent = person.aliases.join(', ');
+            aliasesEl.className = 'mt-1 text-sm text-gray-900';
+          } else {
+            aliasesEl.textContent = '—';
+            aliasesEl.className = 'mt-1 text-sm text-gray-400';
           }
 
-          // Aliases
-          const aliases = document.getElementById('aliases');
-          if (person.aliases && person.aliases.length > 0) {
-            aliases.innerHTML = person.aliases.map(alias =>
-              \`<span class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-md">\${alias}</span>\`
-            ).join('');
+          // Professional designations - show as text
+          const professionalDesignations = document.getElementById('professionalDesignations');
+          if (person.professional_designations && person.professional_designations.length > 0) {
+            professionalDesignations.textContent = person.professional_designations.join(', ');
+            professionalDesignations.className = 'mt-1 text-sm text-gray-900';
+          } else {
+            professionalDesignations.textContent = '—';
+            professionalDesignations.className = 'mt-1 text-sm text-gray-400';
           }
 
           // Update metadata
