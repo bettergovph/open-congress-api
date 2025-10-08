@@ -7,6 +7,15 @@ export const viewPeopleRouter = new Hono();
 viewPeopleRouter.get("/view/people", (c) => {
   const content = html`
     <div class="container mx-auto px-4 py-8">
+      <!-- Breadcrumb -->
+      <nav class="mb-6 text-sm">
+        <ol class="flex items-center space-x-2 text-gray-600">
+          <li><a href="/" class="hover:text-primary-600">Home</a></li>
+          <li><span class="mx-2">/</span></li>
+          <li class="text-gray-900">People</li>
+        </ol>
+      </nav>
+
       <!-- Filters Section -->
       <div class="bg-white rounded-lg shadow-xs border border-gray-200 p-4 md:p-6 mb-6">
         <div class="space-y-4">
@@ -385,13 +394,13 @@ viewPeopleRouter.get("/view/people", (c) => {
           return \`
             <tr class="hover:bg-gray-50 transition-colors">
               <td class="px-4 py-3">
-                <div class="text-sm \${person.first_name ? 'text-gray-900' : 'text-gray-400'}">\${person.first_name || '—'}</div>
+                <a href="/view/people/\${person.id}" class="text-sm \${person.first_name ? 'text-gray-900 hover:text-primary-600' : 'text-gray-400'} transition-colors">\${person.first_name || '—'}</a>
               </td>
               <td class="px-4 py-3">
-                <div class="text-sm \${person.middle_name ? 'text-gray-900' : 'text-gray-400'}">\${person.middle_name || '—'}</div>
+                <a href="/view/people/\${person.id}" class="text-sm \${person.middle_name ? 'text-gray-900 hover:text-primary-600' : 'text-gray-400'} transition-colors">\${person.middle_name || '—'}</a>
               </td>
               <td class="px-4 py-3">
-                <div class="text-sm \${person.last_name ? 'text-gray-900' : 'text-gray-400'}">\${person.last_name || '—'}</div>
+                <a href="/view/people/\${person.id}" class="text-sm \${person.last_name ? 'text-gray-900 hover:text-primary-600' : 'text-gray-400'} transition-colors font-medium">\${person.last_name || '—'}</a>
               </td>
               <td class="px-4 py-3">
                 <div class="text-sm \${person.name_suffix ? 'text-gray-900' : 'text-gray-400'}">\${person.name_suffix || '—'}</div>
@@ -427,8 +436,9 @@ viewPeopleRouter.get("/view/people", (c) => {
                         ? 'bg-primary-100 text-primary-800'
                         : 'bg-success-100 text-success-800';
                       const positionLabel = isSenator ? 'S' : 'R';
+                      const positionName = isSenator ? 'Senate' : 'House of Representatives';
                       return \`
-                        <span class="inline-block px-2 py-0.5 text-xs rounded-md \${positionColor}" title="\${congress.position} - \${congress.congress_ordinal} Congress">
+                        <span class="inline-block px-2 py-0.5 text-xs rounded-md \${positionColor}" title="\${positionName} - \${congress.congress_ordinal} Congress">
                           \${congress.congress_number}\${positionLabel}
                         </span>
                       \`;

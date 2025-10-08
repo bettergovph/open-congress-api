@@ -7,6 +7,15 @@ export const viewDocumentsRouter = new Hono();
 viewDocumentsRouter.get("/view/documents", (c) => {
   const content = html`
     <div class="container mx-auto px-4 py-8">
+      <!-- Breadcrumb -->
+      <nav class="mb-6 text-sm">
+        <ol class="flex items-center space-x-2 text-gray-600">
+          <li><a href="/" class="hover:text-primary-600">Home</a></li>
+          <li><span class="mx-2">/</span></li>
+          <li class="text-gray-900">Documents</li>
+        </ol>
+      </nav>
+
       <!-- Filters Section -->
       <div class="bg-white rounded-lg shadow-xs border border-gray-200 p-4 md:p-6 mb-6">
         <div class="space-y-4">
@@ -383,19 +392,19 @@ viewDocumentsRouter.get("/view/documents", (c) => {
                 </span>
               </td>
               <td class="px-4 py-3 whitespace-nowrap">
-                <span class="inline-block px-2 py-1 text-xs rounded-md font-mono font-medium \${typeColor}">
+                <a href="/view/documents/\${bill.id}" class="inline-block px-2 py-1 text-xs rounded-md font-mono font-medium \${typeColor} hover:opacity-80 transition-opacity">
                   \${bill.name || bill.bill_number || '—'}
-                </span>
+                </a>
               </td>
               <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                 \${bill.date_filed || "—"}
               </td>
               <td class="px-4 py-3">
-                <div class="space-y-1">
-                  \${(bill.title || bill.congress_website_title) ? \`<div class="text-sm font-medium text-gray-900">\${bill.title || bill.congress_website_title}</div>\` : ''}
+                <a href="/view/documents/\${bill.id}" class="block space-y-1 hover:text-primary-600 transition-colors">
+                  \${(bill.title || bill.congress_website_title) ? \`<div class="text-sm font-medium text-gray-900 hover:text-primary-600">\${bill.title || bill.congress_website_title}</div>\` : ''}
                   \${(bill.long_title || bill.congress_website_abstract) ? \`<div class="text-xs text-gray-600 line-clamp-2">\${bill.long_title || bill.congress_website_abstract}</div>\` : ''}
                   \${!bill.title && !bill.long_title && !bill.congress_website_title && !bill.congress_website_abstract ? '<div class="text-sm text-gray-400">Untitled</div>' : ''}
-                </div>
+                </a>
               </td>
               <td class="px-4 py-3">
                 <div class="flex flex-wrap gap-1">
@@ -414,10 +423,10 @@ viewDocumentsRouter.get("/view/documents", (c) => {
                       const hasMultipleAliases = a.aliases && a.aliases.length > 1;
 
                       return \`
-                        <span class="inline-block px-2 py-0.5 text-xs bg-gray-100 text-gray-700 rounded-md"
+                        <a href="/view/people/\${a.id}" class="inline-block px-2 py-0.5 text-xs bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
                               \${hasMultipleAliases ? \`title="Also known as: \${a.aliases.slice(1).join(', ')}"\` : ''}>
                           \${displayName}
-                        </span>
+                        </a>
                       \`;
                     }).join('') :
                     '<span class="text-sm text-gray-400">—</span>'}

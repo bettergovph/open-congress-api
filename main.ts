@@ -7,7 +7,9 @@ import { billsRouter } from "./routes/bills.ts";
 import { statsRouter } from "./routes/stats.ts";
 import { pingRouter } from "./routes/ping.ts";
 import { viewDocumentsRouter } from "./routes/view/documents.tsx";
+import { viewDocumentDetailRouter } from "./routes/view/document-detail.tsx";
 import { viewPeopleRouter } from "./routes/view/people.tsx";
+import { viewPersonDetailRouter } from "./routes/view/person-detail.tsx";
 import { LandingPage } from "./components/LandingPage.tsx";
 // import { viewBillsRouter } from "./routes/view-bills.tsx";
 
@@ -46,7 +48,9 @@ app.get("/api", swaggerUI({ url: "/api/doc", title: "Open Congress API" }));
 
 // Mount view/dashboard pages
 app.route("/", viewDocumentsRouter);
+app.route("/", viewDocumentDetailRouter);
 app.route("/", viewPeopleRouter);
+app.route("/", viewPersonDetailRouter);
 // app.route("/", viewBillsRouter);
 
 // Landing page at root
