@@ -85,7 +85,6 @@ viewCongressesRouter.get("/view/congresses", async (c) => {
                       <!-- Senate (Left) -->
                       <div class="bg-primary-50/30 p-4">
                         <div class="flex items-center gap-2 mb-3">
-                          <div class="w-1 h-5 bg-primary-600 rounded"></div>
                           <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Senate</h4>
                         </div>
                         <div class="space-y-2">
@@ -103,7 +102,6 @@ viewCongressesRouter.get("/view/congresses", async (c) => {
                       <!-- House (Right) -->
                       <div class="bg-success-50/30 p-4">
                         <div class="flex items-center gap-2 mb-3">
-                          <div class="w-1 h-5 bg-success-600 rounded"></div>
                           <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide">House</h4>
                         </div>
                         <div class="space-y-2">

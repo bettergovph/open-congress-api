@@ -59,13 +59,11 @@ export const Footer = () => {
 
         <!-- Bottom Section -->
         <div class="border-t border-gray-800 mt-8 pt-8">
-          <div class="flex flex-col md:flex-row justify-between items-center">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
             <p class="text-gray-400 text-sm mb-4 md:mb-0">
               2025 Open Congress API - All data is public domain unless otherwise specified.
             </p>
-            <div class="flex space-x-6">
-              <a class="text-gray-400 hover:text-white text-sm transition-colors" href="https://github.com/bettergovph/open-congress-api" target="_blank" rel="noopener noreferrer">Contribute on GitHub</a>
-            </div>
+            <a class="text-gray-400 hover:text-white text-sm transition-colors flex" href="https://github.com/bettergovph/open-congress-api" target="_blank" rel="noopener noreferrer">Contribute on GitHub</a>
           </div>
         </div>
       </div>

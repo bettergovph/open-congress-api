@@ -253,11 +253,15 @@ viewPersonDetailRouter.get("/view/people/:id", async (c) => {
                   return \`
                     <a href="/view/documents/\${doc.id}" class="block p-3 border border-gray-200 rounded-lg hover:border-primary-300 hover:bg-gray-50 transition-all">
                       <div class="flex items-start gap-3">
-                        <span class="inline-block px-2 py-1 text-xs rounded-md font-mono font-medium \${typeColor}">
-                          \${doc.name || doc.bill_number}
-                        </span>
+                        <div class="flex flex-col gap-1">
+                          <span class="inline-block px-2 py-1 text-xs rounded-md font-mono font-medium \${typeColor}">
+                            \${doc.name || doc.bill_number}
+                          </span>
+                          \${doc.congress ? \`<span class="inline-block px-2 py-1 text-xs rounded-md bg-gray-100 text-gray-700 font-medium text-center">\${doc.congress}</span>\` : ''}
+                        </div>
                         <div class="flex-1">
                           <div class="text-sm font-medium text-gray-900">\${doc.title || doc.congress_website_title || 'Untitled'}</div>
+                          \${(doc.long_title || doc.congress_website_abstract) ? \`<div class="text-xs text-gray-600 mt-1 line-clamp-2">\${doc.long_title || doc.congress_website_abstract}</div>\` : ''}
                           \${doc.date_filed ? \`<div class="text-xs text-gray-500 mt-1">Filed: \${doc.date_filed}</div>\` : ''}
                         </div>
                       </div>
@@ -267,7 +271,7 @@ viewPersonDetailRouter.get("/view/people/:id", async (c) => {
               </div>
               \${docsResult.pagination && docsResult.pagination.total > 10 ? \`
                 <div class="mt-4 text-center">
-                  <a href="/view/documents?author=\${encodeURIComponent(person.last_name || '')}" class="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                  <a href="/view/documents?author_id=\${personId}" class="text-primary-600 hover:text-primary-700 text-sm font-medium">
                     View all \${docsResult.pagination.total} documents →
                   </a>
                 </div>

@@ -40,6 +40,7 @@ const listBillsRoute = createRoute({
       type: z.string().optional().openapi({ example: "HB", description: "HB or SB" }),
       scope: z.string().optional().openapi({ example: "National" }),
       author: z.string().optional().openapi({ description: "Filter by author last name" }),
+      author_id: z.string().optional().openapi({ description: "Filter by author person ID (comma-separated for multiple)" }),
       search: z.string().optional().openapi({ description: "Search in title, abstract, or author names" }),
       date_from: z.string().optional().openapi({ example: "2022-01-01" }),
       date_to: z.string().optional().openapi({ example: "2022-12-31" }),
@@ -77,6 +78,7 @@ billsRouter.openapi(listBillsRoute, async (c) => {
       type,
       scope,
       author,
+      author_id,
       search,
       date_from,
       date_to,
@@ -116,6 +118,17 @@ billsRouter.openapi(listBillsRoute, async (c) => {
         }
       `);
       params.author = author;
+    }
+
+    if (author_id) {
+      const authorIds = author_id.split(',').map(id => id.trim());
+      whereConditions.push(`
+        EXISTS {
+          MATCH (d)<-[:AUTHORED]-(p:Person)
+          WHERE p.id IN $author_ids
+        }
+      `);
+      params.author_ids = authorIds;
     }
 
     if (search) {

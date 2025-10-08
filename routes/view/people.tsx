@@ -239,7 +239,7 @@ viewPeopleRouter.get("/view/people", (c) => {
               <li>Use pagination controls to navigate through results</li>
               <li>Search by name or known aliases</li>
               <li>Filter by position (Senator/Representative) or Congress</li>
-              <li>For API access, see the <a href="/api" class="underline font-medium hover:text-primary-800" target="_blank" rel="noopener noreferrer">API documentation</a></li>
+              <li>For API access, see the <a href="/api/scalar" class="underline font-medium hover:text-primary-800" target="_blank" rel="noopener noreferrer">API documentation</a></li>
             </ul>
           </div>
         </div>

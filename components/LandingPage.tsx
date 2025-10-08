@@ -26,7 +26,7 @@ export const LandingPage = () => {
             </p>
             <div class="flex flex-wrap gap-4 justify-center">
               <a
-                href="/api"
+                href="/api/scalar"
                 class="inline-block bg-white text-primary-600 hover:bg-blue-50 font-semibold py-3 px-6 rounded-lg shadow-lg transition-all duration-200"
               >
                 View API Documentation

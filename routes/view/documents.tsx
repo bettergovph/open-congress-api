@@ -83,6 +83,10 @@ viewDocumentsRouter.get("/view/documents", (c) => {
             </button>
           </div>
 
+          <!-- Active Filters (chips) -->
+          <div id="activeFilters" class="hidden flex flex-wrap gap-2 pb-3 border-b border-gray-200">
+          </div>
+
           <!-- Results Summary -->
           <div class="text-sm text-gray-600">
             Showing: <span id="showingRange" class="font-medium">0</span> of <span id="filteredTotal" class="font-medium">0</span> results
@@ -254,7 +258,7 @@ viewDocumentsRouter.get("/view/documents", (c) => {
               <li>Click on column headers to sort the results</li>
               <li>Use pagination controls to navigate through results</li>
               <li>Most House Bills do not have filing dates in the source data</li>
-              <li>For API access, see the <a href="/api" class="underline font-medium hover:text-primary-800" target="_blank" rel="noopener noreferrer">API documentation</a></li>
+              <li>For API access, see the <a href="/api/scalar" class="underline font-medium hover:text-primary-800" target="_blank" rel="noopener noreferrer">API documentation</a></li>
             </ul>
           </div>
         </div>
@@ -268,6 +272,8 @@ viewDocumentsRouter.get("/view/documents", (c) => {
       let currentTotal = 0;
       let currentSort = 'date_filed';
       let currentDir = 'desc';
+      let authorIdFilter = '';
+      let authorNameCache = {};
 
       const searchInput = document.getElementById('searchInput');
       const typeFilter = document.getElementById('typeFilter');
@@ -277,6 +283,7 @@ viewDocumentsRouter.get("/view/documents", (c) => {
       const searchButton = document.getElementById('searchButton');
       const resetButton = document.getElementById('resetFilters');
       const tbody = document.getElementById('billsTableBody');
+      const activeFiltersContainer = document.getElementById('activeFilters');
 
       // Pagination elements
       const prevPage = document.getElementById('prevPage');
@@ -296,6 +303,7 @@ viewDocumentsRouter.get("/view/documents", (c) => {
       if (urlParams.get('type')) typeFilter.value = urlParams.get('type');
       if (urlParams.get('congress')) congressFilter.value = urlParams.get('congress');
       if (urlParams.get('scope')) scopeFilter.value = urlParams.get('scope');
+      if (urlParams.get('author_id')) authorIdFilter = urlParams.get('author_id');
       if (urlParams.get('limit')) {
         currentLimit = parseInt(urlParams.get('limit'));
         limitSelect.value = currentLimit;
@@ -328,12 +336,78 @@ viewDocumentsRouter.get("/view/documents", (c) => {
         }
       }
 
+      async function fetchAuthorName(authorId) {
+        if (authorNameCache[authorId]) {
+          return authorNameCache[authorId];
+        }
+        try {
+          const response = await fetch(\`/api/people/\${authorId}\`);
+          const data = await response.json();
+          if (data.success && data.data) {
+            const person = data.data;
+            const nameParts = [];
+            if (person.first_name) nameParts.push(person.first_name);
+            if (person.middle_name) nameParts.push(person.middle_name);
+            if (person.last_name) nameParts.push(person.last_name);
+            const name = nameParts.join(' ') || 'Unknown';
+            authorNameCache[authorId] = name;
+            return name;
+          }
+        } catch (error) {
+          console.error('Error fetching author name:', error);
+        }
+        return 'Unknown Author';
+      }
+
+      function removeAuthorFilter(authorId) {
+        const ids = authorIdFilter.split(',').filter(id => id.trim() !== authorId.trim());
+        authorIdFilter = ids.join(',');
+        currentOffset = 0;
+        loadBills();
+      }
+
+      async function updateFilterChips() {
+        const chips = [];
+
+        if (authorIdFilter) {
+          const authorIds = authorIdFilter.split(',');
+          for (const authorId of authorIds) {
+            const authorName = await fetchAuthorName(authorId.trim());
+            chips.push(\`
+              <span class="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-800 text-sm rounded-full">
+                <span>Author: \${authorName}</span>
+                <button
+                  onclick="removeAuthorFilter('\${authorId.trim()}')"
+                  class="hover:bg-primary-200 rounded-full p-0.5 transition-colors"
+                  title="Remove filter"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+              </span>
+            \`);
+          }
+        }
+
+        if (chips.length > 0) {
+          activeFiltersContainer.innerHTML = chips.join('');
+          activeFiltersContainer.classList.remove('hidden');
+        } else {
+          activeFiltersContainer.classList.add('hidden');
+        }
+      }
+
+      // Make removeAuthorFilter available globally for onclick handlers
+      window.removeAuthorFilter = removeAuthorFilter;
+
       function updateURL() {
         const params = new URLSearchParams();
         if (searchInput.value) params.set('search', searchInput.value);
         if (typeFilter.value) params.set('type', typeFilter.value);
         if (congressFilter.value) params.set('congress', congressFilter.value);
         if (scopeFilter.value) params.set('scope', scopeFilter.value);
+        if (authorIdFilter) params.set('author_id', authorIdFilter);
         params.set('limit', currentLimit);
         if (currentOffset > 0) params.set('offset', currentOffset);
         params.set('sort', currentSort);
@@ -350,6 +424,7 @@ viewDocumentsRouter.get("/view/documents", (c) => {
         if (typeFilter.value) params.set('type', typeFilter.value);
         if (congressFilter.value) params.set('congress', congressFilter.value);
         if (scopeFilter.value) params.set('scope', scopeFilter.value);
+        if (authorIdFilter) params.set('author_id', authorIdFilter);
         params.set('limit', currentLimit);
         params.set('offset', currentOffset);
         params.set('sort', currentSort);
@@ -366,6 +441,7 @@ viewDocumentsRouter.get("/view/documents", (c) => {
             renderBills(data.data);
             updatePagination(data.pagination);
             updateURL();
+            await updateFilterChips();
           } else {
             tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-red-600">Error loading documents</td></tr>';
           }
@@ -402,7 +478,7 @@ viewDocumentsRouter.get("/view/documents", (c) => {
               <td class="px-4 py-3">
                 <a href="/view/documents/\${bill.id}" class="block space-y-1 hover:text-primary-600 transition-colors">
                   \${(bill.title || bill.congress_website_title) ? \`<div class="text-sm font-medium text-gray-900 hover:text-primary-600">\${bill.title || bill.congress_website_title}</div>\` : ''}
-                  \${(bill.long_title || bill.congress_website_abstract) ? \`<div class="text-xs text-gray-600 line-clamp-2">\${bill.long_title || bill.congress_website_abstract}</div>\` : ''}
+                  \${(bill.long_title || bill.congress_website_abstract) ? \`<div class="text-xs text-gray-600">\${bill.long_title || bill.congress_website_abstract}</div>\` : ''}
                   \${!bill.title && !bill.long_title && !bill.congress_website_title && !bill.congress_website_abstract ? '<div class="text-sm text-gray-400">Untitled</div>' : ''}
                 </a>
               </td>
@@ -529,6 +605,7 @@ viewDocumentsRouter.get("/view/documents", (c) => {
         typeFilter.value = '';
         congressFilter.value = '';
         scopeFilter.value = '';
+        authorIdFilter = '';
         currentOffset = 0;
         currentSort = 'date_filed';
         currentDir = 'desc';
