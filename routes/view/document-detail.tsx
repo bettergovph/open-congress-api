@@ -271,6 +271,25 @@ viewDocumentDetailRouter.get("/view/documents/:id", async (c) => {
             senateLink.classList.remove('hidden');
           }
 
+          // Add PDF source links
+          if (doc.download_url_sources && doc.download_url_sources.length > 0) {
+            const linksList = document.getElementById('linksList');
+            doc.download_url_sources.forEach((url, index) => {
+              const pdfLink = document.createElement('a');
+              pdfLink.href = url;
+              pdfLink.target = '_blank';
+              pdfLink.rel = 'noopener noreferrer';
+              pdfLink.className = 'inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors';
+              pdfLink.innerHTML = \`
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                </svg>
+                PDF Source\${doc.download_url_sources.length > 1 ? \` \${index + 1}\` : ''}
+              \`;
+              linksList.appendChild(pdfLink);
+            });
+          }
+
           // Show content
           document.getElementById('loadingState').classList.add('hidden');
           document.getElementById('contentState').classList.remove('hidden');
