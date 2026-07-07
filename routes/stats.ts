@@ -132,7 +132,7 @@ statsRouter.openapi(getStatsRoute, async (c) => {
     return c.json({
       success: true,
       data: stats,
-    });
+    }, 200);
   } catch (error) {
     console.error("Stats error:", error);
     return c.json({
