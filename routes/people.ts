@@ -296,6 +296,7 @@ peopleRouter.openapi(getPersonRoute, async (c) => {
       const congressQuery = `
         MATCH (p:Person {id: $id})-[:MEMBER_OF]->(g:Group)-[:BELONGS_TO]->(c:Congress)
         RETURN
+          c.id as congress_id,
           c.congress_number as congress_number,
           c.ordinal as congress_ordinal,
           g.name as group_name,
@@ -310,10 +311,11 @@ peopleRouter.openapi(getPersonRoute, async (c) => {
       const congressResult = await runQuery(congressQuery, { id });
 
       // Add congresses_served to the person object
-      (person as Person & { congresses_served: unknown[] }).congresses_served = congressResult.map((row: Record<string, unknown>) => ({
+      person.congresses_served = congressResult.map((row) => ({
+        congress_id: String(row.congress_id || ''),
         congress_number: toNumber(row.congress_number),
-        congress_ordinal: row.congress_ordinal,
-        position: row.position,
+        congress_ordinal: String(row.congress_ordinal || ''),
+        position: (String(row.position) === 'Senator' ? 'senator' : 'representative') as 'senator' | 'representative',
       }));
     }
 

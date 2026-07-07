@@ -8,7 +8,8 @@ export { neo4j, int };
 
 export function toNumber(value: unknown): number {
   if (value && typeof value === 'object' && 'low' in value && 'high' in value) {
-    return (value as neo4j.types.Integer).toNumber();
+    const int = value as { low: number; high: number; toNumber(): number };
+    return int.toNumber();
   }
   return Number(value) || 0;
 }
