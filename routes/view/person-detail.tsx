@@ -4,7 +4,7 @@ import { PageLayout } from "@/components/Layout.tsx";
 
 export const viewPersonDetailRouter = new Hono();
 
-viewPersonDetailRouter.get("/view/people/:id", async (c) => {
+viewPersonDetailRouter.get("/view/people/:id", (c) => {
   const personId = c.req.param("id");
 
   const content = html`

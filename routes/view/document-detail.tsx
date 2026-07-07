@@ -4,7 +4,7 @@ import { PageLayout } from "@/components/Layout.tsx";
 
 export const viewDocumentDetailRouter = new Hono();
 
-viewDocumentDetailRouter.get("/view/documents/:id", async (c) => {
+viewDocumentDetailRouter.get("/view/documents/:id", (c) => {
   const documentId = c.req.param("id");
 
   const content = html`
