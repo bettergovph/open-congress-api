@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { runQuery, int } from "@/lib/neo4j.ts";
+import { runQuery, int, toNumber } from "@/lib/neo4j.ts";
 import {
   PersonSchema,
   BillSchema,
@@ -135,7 +135,7 @@ peopleRouter.openapi(listPeopleRoute, async (c) => {
 
     const countResult = await runQuery(countQuery, params);
     const totalRaw = countResult[0]?.total || 0;
-    const total: number = typeof totalRaw === 'object' && 'low' in totalRaw ? (totalRaw as { low: number }).low : Number(totalRaw);
+    const total: number = toNumber(totalRaw);
 
     // Build ORDER BY clause
     const allowedSortFields = ["first_name", "middle_name", "last_name", "name_suffix"];
@@ -310,10 +310,8 @@ peopleRouter.openapi(getPersonRoute, async (c) => {
       const congressResult = await runQuery(congressQuery, { id });
 
       // Add congresses_served to the person object
-      (person as any).congresses_served = congressResult.map((row: any) => ({
-        congress_number: typeof row.congress_number === 'object' && 'low' in row.congress_number
-          ? row.congress_number.low
-          : Number(row.congress_number),
+      (person as Person & { congresses_served: unknown[] }).congresses_served = congressResult.map((row: Record<string, unknown>) => ({
+        congress_number: toNumber(row.congress_number),
         congress_ordinal: row.congress_ordinal,
         position: row.position,
       }));
@@ -519,7 +517,7 @@ peopleRouter.openapi(getPersonBillsRoute, async (c) => {
 
     const countResult = await runQuery(countQuery, params);
     const totalRaw = countResult[0]?.total || 0;
-    const total: number = typeof totalRaw === 'object' && 'low' in totalRaw ? (totalRaw as { low: number }).low : Number(totalRaw);
+    const total: number = toNumber(totalRaw);
 
     // Get paginated results
     const query = `
@@ -678,7 +676,7 @@ peopleRouter.openapi(searchPeopleRoute, async (c) => {
 
     const countResult = await runQuery(countQuery, params);
     const totalRaw = countResult[0]?.total || 0;
-    const total: number = typeof totalRaw === 'object' && 'low' in totalRaw ? (totalRaw as { low: number }).low : Number(totalRaw);
+    const total: number = toNumber(totalRaw);
 
     // Get paginated results
     const query = `

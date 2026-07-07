@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { runQuery, int } from "@/lib/neo4j.ts";
+import { runQuery, int, toNumber } from "@/lib/neo4j.ts";
 import {
   BillSchema,
   ApiSuccessSchema,
@@ -165,7 +165,7 @@ billsRouter.openapi(listBillsRoute, async (c) => {
     const countQuery = `MATCH (d:Document) ${whereClause} RETURN COUNT(d) as total`;
     const countResult = await runQuery(countQuery, params);
     const totalRaw = countResult[0]?.total || 0;
-    const total: number = typeof totalRaw === 'object' && 'low' in totalRaw ? (totalRaw as { low: number }).low : Number(totalRaw);
+    const total: number = toNumber(totalRaw);
 
     // Build ORDER BY clause
     const sortDirection = dir.toLowerCase() === "asc" ? "ASC" : "DESC";
@@ -621,7 +621,7 @@ billsRouter.openapi(searchDocumentsRoute, async (c) => {
     const countQuery = `MATCH (d:Document) ${whereClause} RETURN COUNT(d) as total`;
     const countResult = await runQuery(countQuery, params);
     const totalRaw = countResult[0]?.total || 0;
-    const total: number = typeof totalRaw === 'object' && 'low' in totalRaw ? (totalRaw as { low: number }).low : Number(totalRaw);
+    const total: number = toNumber(totalRaw);
 
     // Build ORDER BY clause
     const sortDirection = dir.toLowerCase() === "asc" ? "ASC" : "DESC";
