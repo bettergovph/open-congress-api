@@ -168,26 +168,26 @@ billsRouter.openapi(listBillsRoute, async (c) => {
     const total: number = typeof totalRaw === 'object' && 'low' in totalRaw ? (totalRaw as { low: number }).low : Number(totalRaw);
 
     // Build ORDER BY clause
+    const sortDirection = dir.toLowerCase() === "asc" ? "ASC" : "DESC";
     let orderByClause = "";
-    const dirUpper = dir.toUpperCase();
     switch (sort) {
       case "congress":
-        orderByClause = `d.congress ${dirUpper}, d.name`;
+        orderByClause = `d.congress ${sortDirection}, d.name`;
         break;
       case "bill_number":
-        orderByClause = `d.bill_number ${dirUpper}, d.name`;
+        orderByClause = `d.bill_number ${sortDirection}, d.name`;
         break;
       case "date_filed":
-        orderByClause = `d.date_filed ${dirUpper}, d.name`;
+        orderByClause = `d.date_filed ${sortDirection}, d.name`;
         break;
       case "title":
-        orderByClause = `COALESCE(d.title, d.congress_website_title) ${dirUpper}, d.name`;
+        orderByClause = `COALESCE(d.title, d.congress_website_title) ${sortDirection}, d.name`;
         break;
       case "scope":
-        orderByClause = `d.scope ${dirUpper}, d.name`;
+        orderByClause = `d.scope ${sortDirection}, d.name`;
         break;
       case "authors_count":
-        orderByClause = `SIZE(authors) ${dirUpper}, d.name`;
+        orderByClause = `SIZE(authors) ${sortDirection}, d.name`;
         break;
       default:
         orderByClause = `d.date_filed DESC, d.name`;
@@ -624,23 +624,23 @@ billsRouter.openapi(searchDocumentsRoute, async (c) => {
     const total: number = typeof totalRaw === 'object' && 'low' in totalRaw ? (totalRaw as { low: number }).low : Number(totalRaw);
 
     // Build ORDER BY clause
+    const sortDirection = dir.toLowerCase() === "asc" ? "ASC" : "DESC";
     let orderByClause = "";
-    const dirUpper = dir.toUpperCase();
     switch (sort) {
       case "congress":
-        orderByClause = `d.congress ${dirUpper}, d.name`;
+        orderByClause = `d.congress ${sortDirection}, d.name`;
         break;
       case "bill_number":
-        orderByClause = `d.bill_number ${dirUpper}, d.name`;
+        orderByClause = `d.bill_number ${sortDirection}, d.name`;
         break;
       case "date_filed":
-        orderByClause = `d.date_filed ${dirUpper}, d.name`;
+        orderByClause = `d.date_filed ${sortDirection}, d.name`;
         break;
       case "title":
-        orderByClause = `COALESCE(d.title, d.congress_website_title) ${dirUpper}, d.name`;
+        orderByClause = `COALESCE(d.title, d.congress_website_title) ${sortDirection}, d.name`;
         break;
       case "scope":
-        orderByClause = `d.scope ${dirUpper}, d.name`;
+        orderByClause = `d.scope ${sortDirection}, d.name`;
         break;
       default:
         orderByClause = `d.date_filed DESC, d.name`;
