@@ -220,3 +220,13 @@ $RECYCLE.BIN/
 .vite/
 _fresh/
 vendor/
+
+# Vestigial files (project uses Deno, not Node/Python)
+package.json
+package-lock.json
+pyproject.toml
+uv.lock
+main.py
+.python-version
+node_modules/
+.venv/
