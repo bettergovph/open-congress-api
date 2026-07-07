@@ -201,7 +201,35 @@ MATCH (p:Person)-[:AUTHORED]->(d:Document {bill_number: "SB00001"})
 RETURN p.last_name, p.first_name
 ```
 
-### 4. FILED_IN
+### 5. SERVED_IN
+
+Direct relationship between a person and a congress they served in.
+
+**Direction:** `(Person)-[r:SERVED_IN]->(Congress)`
+
+**Properties:**
+- `position` (string) - Position held (e.g., "senator", "representative")
+
+**Notes:**
+- This is a direct shortcut relationship that supplements the `MEMBER_OF→Group→BELONGS_TO→Congress` path
+- Provides quick access to person→congress membership without traversing through chamber (Group) nodes
+- The `position` property indicates whether the person served as senator or representative during that congress
+
+**Example Cypher Query:**
+```cypher
+// Find all senators in 20th Congress using direct relationship
+MATCH (p:Person)-[r:SERVED_IN]->(c:Congress {congress_number: 20})
+WHERE r.position = 'senator'
+RETURN p.last_name, p.first_name
+ORDER BY p.last_name
+
+// Find all congresses a person served in
+MATCH (p:Person {last_name: "Aquino"})-[r:SERVED_IN]->(c:Congress)
+RETURN c.ordinal, r.position
+ORDER BY c.congress_number
+```
+
+### 6. FILED_IN
 
 Connects documents to the congress they were filed in.
 
@@ -252,7 +280,7 @@ Congress
 ```
 
 **Important:**
-- There are NO direct relationships from Person to Congress. All person-congress connections go through the chamber (Group) nodes.
+- There is a direct `SERVED_IN` relationship from Person to Congress as a shortcut. The canonical path through chambers is `Person→MEMBER_OF→Group→BELONGS_TO→Congress`.
 - Documents are connected to Congress via FILED_IN relationships
 - Documents are connected to their authors (Person nodes) via AUTHORED relationships
 
@@ -470,8 +498,10 @@ External REST APIs can query this database using the Neo4j driver for their resp
 
 2. **Optional Properties:** Not all properties are present on all nodes. Always handle potential null values in your queries.
 
-3. **Chamber Navigation:** To find which congress a person served in, you must traverse through the Group (chamber) node:
-   - Person → MEMBER_OF → Group → BELONGS_TO → Congress
+3. **Chamber Navigation:** To find which congress a person served in, use the `SERVED_IN` direct relationship:
+   - Person → SERVED_IN → Congress
+   - Alternatively, traverse through the Group (chamber) node:
+     - Person → MEMBER_OF → Group → BELONGS_TO → Congress
 
 4. **Performance:** Use indexed properties in WHERE clauses when possible for optimal query performance.
 
