@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { runQuery } from "@/lib/neo4j.ts";
+import { runQuery, toNumber } from "@/lib/neo4j.ts";
 import { ApiSuccessSchema, ApiErrorSchema } from "@/lib/schemas.ts";
 
 export const statsRouter = new OpenAPIHono();
@@ -63,13 +63,6 @@ const getStatsRoute = createRoute({
 
 statsRouter.openapi(getStatsRoute, async (c) => {
   try {
-    const toNumber = (val: unknown) => {
-      if (typeof val === 'object' && val !== null && 'low' in val) {
-        return (val as { low: number }).low;
-      }
-      return Number(val) || 0;
-    };
-
     // Query 1: Total bills by type
     const billsQuery = `
       MATCH (d:Document {type: 'bill'})
@@ -139,7 +132,7 @@ statsRouter.openapi(getStatsRoute, async (c) => {
     return c.json({
       success: true,
       data: stats,
-    });
+    }, 200);
   } catch (error) {
     console.error("Stats error:", error);
     return c.json({

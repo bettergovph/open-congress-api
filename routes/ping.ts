@@ -57,7 +57,7 @@ pingRouter.openapi(pingRoute, async (c) => {
         timestamp: new Date().toISOString(),
         database: "connected",
       },
-    });
+    }, 200);
   } catch (error) {
     console.error("Ping error:", error);
     return c.json({

@@ -4,7 +4,7 @@ import { PageLayout } from "@/components/Layout.tsx";
 
 export const viewPersonDetailRouter = new Hono();
 
-viewPersonDetailRouter.get("/view/people/:id", async (c) => {
+viewPersonDetailRouter.get("/view/people/:id", (c) => {
   const personId = c.req.param("id");
 
   const content = html`
@@ -151,6 +151,11 @@ viewPersonDetailRouter.get("/view/people/:id", async (c) => {
     </div>
 
     <script>
+      function escapeHtml(str) {
+        if (!str) return str;
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      }
+
       (async function() {
         const personId = '${personId}';
 
@@ -255,14 +260,14 @@ viewPersonDetailRouter.get("/view/people/:id", async (c) => {
                       <div class="flex items-start gap-3">
                         <div class="flex flex-col gap-1">
                           <span class="inline-block px-2 py-1 text-xs rounded-md font-mono font-medium \${typeColor}">
-                            \${doc.name || doc.bill_number}
+                            \${escapeHtml(doc.name || doc.bill_number)}
                           </span>
-                          \${doc.congress ? \`<span class="inline-block px-2 py-1 text-xs rounded-md bg-gray-100 text-gray-700 font-medium text-center">\${doc.congress}</span>\` : ''}
+                          \${doc.congress ? \`<span class="inline-block px-2 py-1 text-xs rounded-md bg-gray-100 text-gray-700 font-medium text-center">\${escapeHtml(doc.congress)}</span>\` : ''}
                         </div>
                         <div class="flex-1">
-                          <div class="text-sm font-medium text-gray-900">\${doc.title || doc.congress_website_title || 'Untitled'}</div>
-                          \${(doc.long_title || doc.congress_website_abstract) ? \`<div class="text-xs text-gray-600 mt-1 line-clamp-2">\${doc.long_title || doc.congress_website_abstract}</div>\` : ''}
-                          \${doc.date_filed ? \`<div class="text-xs text-gray-500 mt-1">Filed: \${doc.date_filed}</div>\` : ''}
+                          <div class="text-sm font-medium text-gray-900">\${escapeHtml(doc.title || doc.congress_website_title || 'Untitled')}</div>
+                          \${(doc.long_title || doc.congress_website_abstract) ? \`<div class="text-xs text-gray-600 mt-1 line-clamp-2">\${escapeHtml(doc.long_title || doc.congress_website_abstract)}</div>\` : ''}
+                          \${doc.date_filed ? \`<div class="text-xs text-gray-500 mt-1">Filed: \${escapeHtml(doc.date_filed)}</div>\` : ''}
                         </div>
                       </div>
                     </a>

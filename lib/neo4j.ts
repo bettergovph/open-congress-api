@@ -6,6 +6,14 @@ config();
 
 export { neo4j, int };
 
+export function toNumber(value: unknown): number {
+  if (value && typeof value === 'object' && 'low' in value && 'high' in value) {
+    const int = value as { low: number; high: number; toNumber(): number };
+    return int.toNumber();
+  }
+  return Number(value) || 0;
+}
+
 let driver: Driver | null = null;
 
 export function getDriver(): Driver {
@@ -53,19 +61,19 @@ export async function runQuery<T extends Record<string, unknown> = Record<string
         const value = record.get(key);
         // Handle Neo4j Integer type
         if (value && typeof value === 'object' && 'low' in value && 'high' in value) {
-          obj[key] = value.low;
+          obj[key] = toNumber(value);
         } else if (Array.isArray(value)) {
           // Handle arrays that might contain Neo4j Integers or objects with integers
           obj[key] = value.map(item => {
             if (item && typeof item === 'object' && 'low' in item && 'high' in item) {
-              return item.low;
+              return toNumber(item);
             } else if (item && typeof item === 'object') {
               // Recursively handle objects in arrays
               const nestedObj: Record<string, unknown> = {};
               Object.keys(item).filter(k => typeof k === 'string').forEach(nestedKey => {
                 const nestedValue = (item as Record<string, unknown>)[nestedKey];
                 if (nestedValue && typeof nestedValue === 'object' && 'low' in nestedValue && 'high' in nestedValue) {
-                  nestedObj[nestedKey] = (nestedValue as { low: number }).low;
+                  nestedObj[nestedKey] = toNumber(nestedValue);
                 } else {
                   nestedObj[nestedKey] = nestedValue;
                 }

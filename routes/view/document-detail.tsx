@@ -4,7 +4,7 @@ import { PageLayout } from "@/components/Layout.tsx";
 
 export const viewDocumentDetailRouter = new Hono();
 
-viewDocumentDetailRouter.get("/view/documents/:id", async (c) => {
+viewDocumentDetailRouter.get("/view/documents/:id", (c) => {
   const documentId = c.req.param("id");
 
   const content = html`
@@ -169,6 +169,11 @@ viewDocumentDetailRouter.get("/view/documents/:id", async (c) => {
     </div>
 
     <script>
+      function escapeHtml(str) {
+        if (!str) return str;
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      }
+
       (async function() {
         const documentId = '${documentId}';
 
@@ -235,7 +240,7 @@ viewDocumentDetailRouter.get("/view/documents/:id", async (c) => {
                 return \`
                   <a href="/view/people/\${author.id}"
                      class="inline-block px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors">
-                    \${displayName}
+                    \${escapeHtml(displayName)}
                   </a>
                 \`;
               }).join('');
@@ -254,7 +259,7 @@ viewDocumentDetailRouter.get("/view/documents/:id", async (c) => {
           if (doc.subjects && doc.subjects.length > 0) {
             document.getElementById('subjectsSection').classList.remove('hidden');
             document.getElementById('subjectsList').innerHTML = doc.subjects.map(subject =>
-              \`<span class="inline-block px-3 py-1.5 text-sm bg-blue-50 text-blue-700 rounded-md">\${subject}</span>\`
+              \`<span class="inline-block px-3 py-1.5 text-sm bg-blue-50 text-blue-700 rounded-md">\${escapeHtml(subject)}</span>\`
             ).join('');
           }
 

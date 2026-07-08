@@ -248,6 +248,11 @@ viewPeopleRouter.get("/view/people", (c) => {
 
   <script>
     (function() {
+      function escapeHtml(str) {
+        if (!str) return str;
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      }
+
       let currentOffset = 0;
       let currentLimit = 50;
       let currentTotal = 0;
@@ -394,23 +399,23 @@ viewPeopleRouter.get("/view/people", (c) => {
           return \`
             <tr class="hover:bg-gray-50 transition-colors">
               <td class="px-4 py-3">
-                <a href="/view/people/\${person.id}" class="text-sm \${person.first_name ? 'text-gray-900 hover:text-primary-600' : 'text-gray-400'} transition-colors">\${person.first_name || '—'}</a>
+                <a href="/view/people/\${person.id}" class="text-sm \${person.first_name ? 'text-gray-900 hover:text-primary-600' : 'text-gray-400'} transition-colors">\${escapeHtml(person.first_name) || '—'}</a>
               </td>
               <td class="px-4 py-3">
-                <a href="/view/people/\${person.id}" class="text-sm \${person.middle_name ? 'text-gray-900 hover:text-primary-600' : 'text-gray-400'} transition-colors">\${person.middle_name || '—'}</a>
+                <a href="/view/people/\${person.id}" class="text-sm \${person.middle_name ? 'text-gray-900 hover:text-primary-600' : 'text-gray-400'} transition-colors">\${escapeHtml(person.middle_name) || '—'}</a>
               </td>
               <td class="px-4 py-3">
-                <a href="/view/people/\${person.id}" class="text-sm \${person.last_name ? 'text-gray-900 hover:text-primary-600' : 'text-gray-400'} transition-colors font-medium">\${person.last_name || '—'}</a>
+                <a href="/view/people/\${person.id}" class="text-sm \${person.last_name ? 'text-gray-900 hover:text-primary-600' : 'text-gray-400'} transition-colors font-medium">\${escapeHtml(person.last_name) || '—'}</a>
               </td>
               <td class="px-4 py-3">
-                <div class="text-sm \${person.name_suffix ? 'text-gray-900' : 'text-gray-400'}">\${person.name_suffix || '—'}</div>
+                <div class="text-sm \${person.name_suffix ? 'text-gray-900' : 'text-gray-400'}">\${escapeHtml(person.name_suffix) || '—'}</div>
               </td>
               <td class="px-4 py-3">
                 <div class="flex flex-wrap gap-1">
                   \${person.aliases && person.aliases.length > 0 ?
                     person.aliases.map(alias => \`
                       <span class="inline-block px-2 py-0.5 text-xs bg-gray-100 text-gray-700 rounded-md">
-                        \${alias}
+                        \${escapeHtml(alias)}
                       </span>
                     \`).join('') :
                     '<span class="text-sm text-gray-400">—</span>'}
@@ -421,7 +426,7 @@ viewPeopleRouter.get("/view/people", (c) => {
                   \${person.professional_designations && person.professional_designations.length > 0 ?
                     person.professional_designations.map(desig => \`
                       <span class="inline-block px-2 py-0.5 text-xs bg-primary-100 text-primary-800 rounded-md">
-                        \${desig}
+                        \${escapeHtml(desig)}
                       </span>
                     \`).join('') :
                     '<span class="text-sm text-gray-400">—</span>'}

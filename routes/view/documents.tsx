@@ -267,6 +267,11 @@ viewDocumentsRouter.get("/view/documents", (c) => {
 
   <script>
     (function() {
+      function escapeHtml(str) {
+        if (!str) return str;
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      }
+
       let currentOffset = 0;
       let currentLimit = 50;
       let currentTotal = 0;
@@ -464,21 +469,21 @@ viewDocumentsRouter.get("/view/documents", (c) => {
             <tr class="hover:bg-gray-50 transition-colors">
               <td class="px-4 py-3 whitespace-nowrap text-center">
                 <span class="inline-block px-2 py-1 text-xs rounded-md bg-gray-100 text-gray-700 font-medium">
-                  \${bill.congress || '—'}
+                  \${escapeHtml(bill.congress) || '—'}
                 </span>
               </td>
               <td class="px-4 py-3 whitespace-nowrap">
                 <a href="/view/documents/\${bill.id}" class="inline-block px-2 py-1 text-xs rounded-md font-mono font-medium \${typeColor} hover:opacity-80 transition-opacity">
-                  \${bill.name || bill.bill_number || '—'}
+                  \${escapeHtml(bill.name || bill.bill_number || '—')}
                 </a>
               </td>
               <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                \${bill.date_filed || "—"}
+                \${escapeHtml(bill.date_filed) || "—"}
               </td>
               <td class="px-4 py-3">
                 <a href="/view/documents/\${bill.id}" class="block space-y-1 hover:text-primary-600 transition-colors">
-                  \${(bill.title || bill.congress_website_title) ? \`<div class="text-sm font-medium text-gray-900 hover:text-primary-600">\${bill.title || bill.congress_website_title}</div>\` : ''}
-                  \${(bill.long_title || bill.congress_website_abstract) ? \`<div class="text-xs text-gray-600">\${bill.long_title || bill.congress_website_abstract}</div>\` : ''}
+                  \${(bill.title || bill.congress_website_title) ? \`<div class="text-sm font-medium text-gray-900 hover:text-primary-600">\${escapeHtml(bill.title || bill.congress_website_title)}</div>\` : ''}
+                  \${(bill.long_title || bill.congress_website_abstract) ? \`<div class="text-xs text-gray-600">\${escapeHtml(bill.long_title || bill.congress_website_abstract)}</div>\` : ''}
                   \${!bill.title && !bill.long_title && !bill.congress_website_title && !bill.congress_website_abstract ? '<div class="text-sm text-gray-400">Untitled</div>' : ''}
                 </a>
               </td>
@@ -500,8 +505,8 @@ viewDocumentsRouter.get("/view/documents", (c) => {
 
                       return \`
                         <a href="/view/people/\${a.id}" class="inline-block px-2 py-0.5 text-xs bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
-                              \${hasMultipleAliases ? \`title="Also known as: \${a.aliases.slice(1).join(', ')}"\` : ''}>
-                          \${displayName}
+                              \${hasMultipleAliases ? \`title="Also known as: \${escapeHtml(a.aliases.slice(1).join(', '))}"\` : ''}>
+                          \${escapeHtml(displayName)}
                         </a>
                       \`;
                     }).join('') :
@@ -509,9 +514,9 @@ viewDocumentsRouter.get("/view/documents", (c) => {
                 </div>
               </td>
               <td class="px-4 py-3 whitespace-nowrap">
-                \${bill.scope ? \`
+                    \${bill.scope ? \`
                   <span class="inline-block px-2 py-1 text-xs rounded-md bg-gray-100 text-gray-700">
-                    \${bill.scope}
+                    \${escapeHtml(bill.scope)}
                   </span>
                 \` : '<span class="text-gray-400 text-sm">—</span>'}
               </td>

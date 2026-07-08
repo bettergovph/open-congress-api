@@ -4,7 +4,7 @@ import { html } from "hono/html";
 
 export const viewCongressDetailRouter = new OpenAPIHono();
 
-viewCongressDetailRouter.get("/view/congresses/:congressNumber", async (c) => {
+viewCongressDetailRouter.get("/view/congresses/:congressNumber", (c) => {
   const congressNumber = c.req.param("congressNumber");
 
   const content = html`
