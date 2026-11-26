@@ -1,7 +1,7 @@
 # Open Congress API
 
-A modern REST API built with [Deno](https://deno.com/),
-[TypeScript](https://www.typescriptlang.org/), and
+A modern REST API built for [Cloudflare Workers](https://workers.cloudflare.com/) with
+[TypeScript](https://www.typescriptlang.org/) and
 [Hono](https://hono.dev/) that serves Philippine Congress data from a
 Neo4j graph database. Features auto-generated OpenAPI documentation via Swagger UI. Based on data from the
 [bettergovph/open-congress-data](https://github.com/bettergovph/open-congress-data)
@@ -9,43 +9,66 @@ repository.
 
 ## Tech Stack
 
-- **Runtime**: Deno 2.x
+- **Runtime**: Cloudflare Workers
 - **Framework**: Hono 4.x
 - **API Docs**: @hono/zod-openapi + Swagger UI
 - **Validation**: Zod
-- **Database**: Neo4j 5.x
+- **Database**: Neo4j 5.19+ via the HTTPS Query API
+- **Tests**: Vitest + @cloudflare/vitest-pool-workers
 
 ## Prerequisites
 
-- [Deno](https://docs.deno.com/runtime/getting_started/installation/)
-- [Neo4j](https://neo4j.com/download/) with [bettergovph/open-congress-data](https://github.com/bettergovph/open-congress-data/blob/main/DEVELOPMENT.md) set up
+- [Node.js](https://nodejs.org/) 20+
+- A [Neo4j](https://neo4j.com/download/) 5.19+ instance (Aura works as-is) with the HTTP(S) port reachable from the Worker, loaded with [bettergovph/open-congress-data](https://github.com/bettergovph/open-congress-data/blob/main/DEVELOPMENT.md)
 
 ## Development
 
-Start the development server:
-
 ```bash
-deno task start
+npm install
+cp .dev.vars.example .dev.vars   # then fill in your Neo4j credentials
+npm run dev
 ```
 
-The API will be available at `http://localhost:8000`
+The API will be available at `http://localhost:8787`
+
+`NEO4J_URI` may stay Bolt-style (`neo4j+s://...`, `bolt://...`); the Query API
+HTTP URL is derived from it. Set `NEO4J_HTTP_URL` to override it.
+
+Other scripts: `npm test`, `npm run typecheck`, `npm run cf-typegen`.
+
+## Deployment
+
+```bash
+npx wrangler login
+npx wrangler secret put NEO4J_URI
+npx wrangler secret put NEO4J_USERNAME
+npx wrangler secret put NEO4J_PASSWORD
+# optional: npx wrangler secret put NEO4J_HTTP_URL
+npm run deploy
+```
+
+To serve `open-congress-api.bettergov.ph`, uncomment the `routes` block in
+`wrangler.jsonc` and move the DNS record off Deno Deploy.
+
+The `Deploy` GitHub workflow deploys on every push to `main`. It needs the
+repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 
 ## Available Endpoints
 
 ### API Endpoints
-- **API**: `http://localhost:8000/api/*` - REST API endpoints
-- **Scalar Docs**: `http://localhost:8000/api/scalar` - Beautiful API documentation powered by [Scalar](https://scalar.com)
-- **Swagger UI**: `http://localhost:8000/api` - Interactive API documentation
-- **OpenAPI Spec**: `http://localhost:8000/api/doc` - OpenAPI 3.0 JSON specification
+- **API**: `http://localhost:8787/api/*` - REST API endpoints
+- **Scalar Docs**: `http://localhost:8787/api/scalar` - Beautiful API documentation powered by [Scalar](https://scalar.com)
+- **Swagger UI**: `http://localhost:8787/api` - Interactive API documentation
+- **OpenAPI Spec**: `http://localhost:8787/api/doc` - OpenAPI 3.0 JSON specification
 
 ### Web UI
-- **Home**: `http://localhost:8000/` - Landing page with quick access links
-- **Congresses**: `http://localhost:8000/view/congresses` - Browse all Philippine congresses with statistics
-- **Congress Detail**: `http://localhost:8000/view/congresses/{congressNumber}` - View senators and representatives for a specific congress
-- **Documents**: `http://localhost:8000/view/documents` - Browse and search legislative documents (House Bills and Senate Bills)
-- **Document Detail**: `http://localhost:8000/view/documents/{documentId}` - View individual document details, authors, and metadata
-- **People**: `http://localhost:8000/view/people` - Browse senators and representatives with filtering
-- **Person Detail**: `http://localhost:8000/view/people/{personId}` - View individual legislator profiles, congress memberships, and authored bills
+- **Home**: `http://localhost:8787/` - Landing page with quick access links
+- **Congresses**: `http://localhost:8787/view/congresses` - Browse all Philippine congresses with statistics
+- **Congress Detail**: `http://localhost:8787/view/congresses/{congressNumber}` - View senators and representatives for a specific congress
+- **Documents**: `http://localhost:8787/view/documents` - Browse and search legislative documents (House Bills and Senate Bills)
+- **Document Detail**: `http://localhost:8787/view/documents/{documentId}` - View individual document details, authors, and metadata
+- **People**: `http://localhost:8787/view/people` - Browse senators and representatives with filtering
+- **Person Detail**: `http://localhost:8787/view/people/{personId}` - View individual legislator profiles, congress memberships, and authored bills
 
 ## Web UI Features
 
