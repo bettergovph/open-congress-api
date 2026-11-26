@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "hono/jsx",
+    "types": ["./worker-configuration.d.ts", "@cloudflare/vitest-pool-workers/types"]
+  },
+  "include": ["main.ts", "lib", "routes", "components", "test", "vitest.config.ts", "worker-configuration.d.ts"]
+}

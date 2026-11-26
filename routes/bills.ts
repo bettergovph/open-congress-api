@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { runQuery, int } from "@/lib/neo4j.ts";
+import { runQuery, int } from "../lib/neo4j.ts";
 import {
   BillSchema,
   ApiSuccessSchema,
@@ -8,7 +8,7 @@ import {
   PersonSchema,
   type Bill,
   type Person,
-} from "@/lib/schemas.ts";
+} from "../lib/schemas.ts";
 
 export const billsRouter = new OpenAPIHono();
 

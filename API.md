@@ -2,7 +2,7 @@
 
 ## Base URL
 ```
-http://localhost:5173/api
+http://localhost:8787/api
 ```
 
 ## Response Format
@@ -65,10 +65,10 @@ Query Parameters:
 
 Example:
 ```bash
-curl "http://localhost:5173/api/congresses?year=2020&limit=10"
+curl "http://localhost:8787/api/congresses?year=2020&limit=10"
 
 # With statistics
-curl "http://localhost:5173/api/congresses?include_stats=true&limit=10"
+curl "http://localhost:8787/api/congresses?include_stats=true&limit=10"
 ```
 
 When `include_stats=true` is provided, each congress object will include:
@@ -90,10 +90,10 @@ Parameters:
 Examples:
 ```bash
 # Get by congress number
-curl "http://localhost:5173/api/congresses/20"
+curl "http://localhost:8787/api/congresses/20"
 
 # Get by ULID
-curl "http://localhost:5173/api/congresses/01H8ZXR5KBQZ..."
+curl "http://localhost:8787/api/congresses/01H8ZXR5KBQZ..."
 ```
 
 #### Get Congress Senators
@@ -107,7 +107,7 @@ Query Parameters:
 
 Example:
 ```bash
-curl "http://localhost:5173/api/congresses/20/senators"
+curl "http://localhost:8787/api/congresses/20/senators"
 ```
 
 #### Get Congress Representatives
@@ -121,7 +121,7 @@ Query Parameters:
 
 Example:
 ```bash
-curl "http://localhost:5173/api/congresses/20/representatives"
+curl "http://localhost:8787/api/congresses/20/representatives"
 ```
 
 #### Get Congress Committees
@@ -136,7 +136,7 @@ Query Parameters:
 
 Example:
 ```bash
-curl "http://localhost:5173/api/congresses/20/committees?type=regular"
+curl "http://localhost:8787/api/congresses/20/committees?type=regular"
 ```
 
 ### People Endpoints
@@ -156,7 +156,7 @@ Query Parameters:
 
 Example:
 ```bash
-curl "http://localhost:5173/api/people?type=senator&congress=20"
+curl "http://localhost:8787/api/people?type=senator&congress=20"
 ```
 
 #### Get Person by ID
@@ -172,10 +172,10 @@ Query Parameters:
 
 Example:
 ```bash
-curl "http://localhost:5173/api/people/01H8ZXR5KBQZ..."
+curl "http://localhost:8787/api/people/01H8ZXR5KBQZ..."
 
 # With congress memberships
-curl "http://localhost:5173/api/people/01H8ZXR5KBQZ...?include_congresses=true"
+curl "http://localhost:8787/api/people/01H8ZXR5KBQZ...?include_congresses=true"
 ```
 
 When `include_congresses=true` is provided, the person object will include a `congresses` array with membership details (congress number, ordinal, group name, and position).
@@ -189,7 +189,7 @@ Returns all congresses where the person served.
 
 Example:
 ```bash
-curl "http://localhost:5173/api/people/01H8ZXR5KBQZ.../congresses"
+curl "http://localhost:8787/api/people/01H8ZXR5KBQZ.../congresses"
 ```
 
 
@@ -236,7 +236,7 @@ Query Parameters:
 
 Example:
 ```bash
-curl "http://localhost:5173/api/bills?congress=19&type=sb"
+curl "http://localhost:8787/api/bills?congress=19&type=sb"
 ```
 
 #### Get Bill by ID or Number
@@ -249,7 +249,7 @@ Parameters:
 
 Example:
 ```bash
-curl "http://localhost:5173/api/bills/HB00001"
+curl "http://localhost:8787/api/bills/HB00001"
 ```
 
 #### Get Bill Authors
@@ -261,7 +261,7 @@ Returns all authors of a specific bill.
 
 Example:
 ```bash
-curl "http://localhost:5173/api/bills/SB00001/authors"
+curl "http://localhost:8787/api/bills/SB00001/authors"
 ```
 
 #### Get Person's Authored Bills
@@ -279,7 +279,7 @@ Returns all bills authored by a specific person.
 
 Example:
 ```bash
-curl "http://localhost:5173/api/people/01H8ZXR5KBQZ.../bills?congress=19"
+curl "http://localhost:8787/api/people/01H8ZXR5KBQZ.../bills?congress=19"
 ```
 
 #### Get Congress Bills
@@ -297,7 +297,7 @@ Returns all bills filed in a specific congress.
 
 Example:
 ```bash
-curl "http://localhost:5173/api/congresses/19/bills?type=hb"
+curl "http://localhost:8787/api/congresses/19/bills?type=hb"
 ```
 
 ### Statistics Endpoint
@@ -500,7 +500,7 @@ Currently, all endpoints are public. Authentication will be added for write oper
 
 ### Get the 20th Congress with Statistics
 ```bash
-curl "http://localhost:5173/api/congresses/20"
+curl "http://localhost:8787/api/congresses/20"
 ```
 
 Response:
@@ -526,17 +526,17 @@ Response:
 
 ### Search for People Named "Aquino"
 ```bash
-curl "http://localhost:5173/api/people?search=Aquino"
+curl "http://localhost:8787/api/people?search=Aquino"
 ```
 
 ### Get All Senators from the 20th Congress
 ```bash
-curl "http://localhost:5173/api/congresses/20/senators"
+curl "http://localhost:8787/api/congresses/20/senators"
 ```
 
 ### Get a Person's Service History
 ```bash
-curl "http://localhost:5173/api/people/01H8ZXR5KBQZ.../congresses"
+curl "http://localhost:8787/api/people/01H8ZXR5KBQZ.../congresses"
 ```
 
 Response:
@@ -570,7 +570,7 @@ Response:
 
 ### Get Senate Bills from 19th Congress
 ```bash
-curl "http://localhost:5173/api/bills?congress=19&type=sb&limit=10"
+curl "http://localhost:8787/api/bills?congress=19&type=sb&limit=10"
 ```
 
 Response:
@@ -599,7 +599,7 @@ Response:
 
 ### Get Authors of a Bill
 ```bash
-curl "http://localhost:5173/api/bills/SB00001/authors"
+curl "http://localhost:8787/api/bills/SB00001/authors"
 ```
 
 Response:
@@ -625,7 +625,7 @@ Response:
 
 ### Get Bills Authored by a Person
 ```bash
-curl "http://localhost:5173/api/people/01H8ZXR5KBQZ.../bills?congress=19"
+curl "http://localhost:8787/api/people/01H8ZXR5KBQZ.../bills?congress=19"
 ```
 
 Response:

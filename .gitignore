@@ -220,3 +220,9 @@ $RECYCLE.BIN/
 .vite/
 _fresh/
 vendor/
+
+# Cloudflare Workers
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+.wrangler/

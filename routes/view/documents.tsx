@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { html } from "hono/html";
-import { PageLayout } from "@/components/Layout.tsx";
+import { PageLayout } from "../../components/Layout.tsx";
 
 export const viewDocumentsRouter = new Hono();
 
