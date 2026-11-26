@@ -152,7 +152,7 @@ app.notFound((c) => {
     </div>
   `;
 
-  return c.html(PageLayout({ title: "404 Not Found - Open Congress API", children: content }));
+  return c.html(PageLayout({ title: "404 Not Found - Open Congress API", children: content }), 404);
 });
 
-Deno.serve(app.fetch);
+export default app;

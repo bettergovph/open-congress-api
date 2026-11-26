@@ -1,5 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { PageLayout } from "@/components/Layout.tsx";
+import { PageLayout } from "../../components/Layout.tsx";
 import { html } from "hono/html";
 
 export const viewCongressesRouter = new OpenAPIHono();

@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "open-congress-api",
+  "main": "main.ts",
+  "compatibility_date": "2026-08-22",
+  "assets": { "directory": "./static" },
+  "observability": { "enabled": true },
+  "vars": { "NEO4J_DATABASE": "neo4j" }
+  // Custom domain: uncomment once DNS is ready to move off Deno Deploy.
+  // "routes": [{ "pattern": "open-congress-api.bettergov.ph", "custom_domain": true }]
+
+  // Secrets (set with `npx wrangler secret put <NAME>`; never commit them):
+  //   NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD
+  //   optional: NEO4J_HTTP_URL (otherwise derived from NEO4J_URI)
+}

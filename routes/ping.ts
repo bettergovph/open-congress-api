@@ -1,6 +1,6 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { getDriver } from "@/lib/neo4j.ts";
-import { ApiSuccessSchema, ApiErrorSchema } from "@/lib/schemas.ts";
+import { verifyConnectivity } from "../lib/neo4j.ts";
+import { ApiSuccessSchema, ApiErrorSchema } from "../lib/schemas.ts";
 
 export const pingRouter = new OpenAPIHono();
 
@@ -9,7 +9,7 @@ export const pingRouter = new OpenAPIHono();
  *
  * Purpose: Health check endpoint to verify API and database connectivity
  *
- * Neo4j Query: Simple connectivity test using driver.verifyConnectivity()
+ * Neo4j Query: Simple connectivity test using verifyConnectivity()
  *
  * Example: GET /api/ping
  */
@@ -47,8 +47,7 @@ const pingRoute = createRoute({
 pingRouter.openapi(pingRoute, async (c) => {
   try {
     // Test database connectivity
-    const driver = getDriver();
-    await driver.verifyConnectivity();
+    await verifyConnectivity();
 
     return c.json({
       success: true,
@@ -57,7 +56,7 @@ pingRouter.openapi(pingRoute, async (c) => {
         timestamp: new Date().toISOString(),
         database: "connected",
       },
-    });
+    }, 200);
   } catch (error) {
     console.error("Ping error:", error);
     return c.json({
